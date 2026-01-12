@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessWhatsappMessage;
 
@@ -16,6 +17,11 @@ class WhatsappWebhookController extends Controller
         $instance = $data['instance'] ?? null;
         $payloadData = $data['data'] ?? [];
         $key = $payloadData['key'] ?? [];
+        $event = $data['event'] ?? null;
+        // Evolution envia status dentro de data.status (e não em key.status); cobrimos todas as variantes.
+        $status = $payloadData['status'] ?? ($data['status'] ?? ($key['status'] ?? null));
+        $message = $payloadData['message'] ?? [];
+        $messageId = $key['id'] ?? null;
         $remetente = $key['remoteJid']
             ?? ($payloadData['jid'] ?? null)
             ?? ($payloadData['number'] ?? null)
@@ -24,6 +30,52 @@ class WhatsappWebhookController extends Controller
 
         $fromMe = $key['fromMe'] ?? false;
         $source = $payloadData['source'] ?? null;
+        $senderPn = $key['senderPn'] ?? null;
+
+        // Dedup rápido: evita enfileirar/reprocessar a mesma mensagem ou update de status múltiplas vezes
+        if ($messageId) {
+            $dedupKey = 'webhook_msg_' . $messageId;
+            if (!Cache::add($dedupKey, true, now()->addMinutes(10))) {
+                Log::info('[BLOQUEADO] Webhook duplicado ignorado', [
+                    'message_id' => $messageId,
+                    'instance' => $instance,
+                    'status' => $status,
+                ]);
+                http_response_code(202);
+                header('Content-Type: application/json');
+                die(json_encode(['ignored' => 'duplicate']));
+            }
+        }
+
+        // Bloquear eventos de status apenas quando NÃO há conteúdo de mensagem
+        // Alguns provedores enviam status DELIVERY_ACK junto com mensagens reais; por isso checamos se $message está vazio.
+        if (empty($message) && in_array($status, ['DELIVERY_ACK', 'READ', 'ERROR', 'PENDING'])) {
+            Log::debug('[BLOQUEADO] Evento de status, não é mensagem real', [
+                'status' => $status,
+                'evento' => $event,
+                'instance' => $instance,
+            ]);
+            http_response_code(202);
+            header('Content-Type: application/json');
+            die(json_encode(['ignored' => 'status_update']));
+        }
+
+        // Bloquear se não houver conteúdo de mensagem
+        if (empty($message)) {
+            Log::debug('[BLOQUEADO] Webhook sem conteúdo de mensagem', [
+                'instance' => $instance,
+                'remetente' => $remetente,
+                'keys_disponiveis' => array_keys($payloadData ?? []),
+            ]);
+            http_response_code(202);
+            header('Content-Type: application/json');
+            die(json_encode(['ignored' => 'no_message_content']));
+        }
+
+        // Garantir que senderPn seja incluído no data para o job processar
+        if ($senderPn && isset($data['data']) && isset($data['data']['key'])) {
+            $data['data']['key']['senderPn'] = $senderPn;
+        }
 
         Log::info('Webhook received; dispatching job', [
             'instance' => $instance,

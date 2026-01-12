@@ -1,19 +1,257 @@
-﻿
-[2025-12-18 11:52:38] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"553199380844@s.whatsapp.net","fromMe":true,"source":"ios","ip":"127.0.0.1","xff":null} 
-[2025-12-18 11:52:38] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"553199380844@s.whatsapp.net","fromMe":true,"id":"3A1BEB51C9CD5D82D74D"},"pushName":"Lucas Prado","status":"SERVER_ACK","message":{"conversation":"Oi"},"messageType":"conversation","messageTimestamp":1766058757,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"ios"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2025-12-18T08:52:37.876Z","sender":"553199380844@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
-[2025-12-18 11:52:38] local.INFO: Webhook in sync mode; processing inline  
-[2025-12-18 11:52:38] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"553199380844@s.whatsapp.net","fromMe":true,"isGrupo":false,"source":"ios"} 
-[2025-12-18 11:52:38] local.DEBUG: [DEBUG] handle() iniciado  
-[2025-12-18 11:52:38] local.INFO: [ENTRADA] Mensagem recebida de: 553199380844@s.whatsapp.net | Instance: N8n | fromMe: SIM | Grupo: NÃO  
-[2025-12-18 11:52:45] local.INFO: Resposta final da IA (job): {"resposta":"Olá! Como posso ajudar você hoje? Se precisar de assistência com webhooks ou algo mais, é só avisar!"} 
-[2025-12-18 11:52:49] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
-[2025-12-18 11:52:49] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB000C5596D6410AF852CB12FD79E37C81A8F76\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Olá! Como posso ajudar você hoje? Se precisar de assistência com webhooks ou algo mais, é só avisar!\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1766058769,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 
-[2025-12-18 11:53:11] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"553199380844@s.whatsapp.net","fromMe":true,"source":"ios","ip":"127.0.0.1","xff":null} 
-[2025-12-18 11:53:11] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"553199380844@s.whatsapp.net","fromMe":true,"id":"3AB8EB1D816CA7B8D199"},"pushName":"Lucas Prado","status":"SERVER_ACK","message":{"conversation":"Tudo bem ?"},"messageType":"conversation","messageTimestamp":1766058791,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"ios"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2025-12-18T08:53:11.784Z","sender":"553199380844@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
-[2025-12-18 11:53:11] local.INFO: Webhook in sync mode; processing inline  
-[2025-12-18 11:53:11] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"553199380844@s.whatsapp.net","fromMe":true,"isGrupo":false,"source":"ios"} 
-[2025-12-18 11:53:11] local.DEBUG: [DEBUG] handle() iniciado  
-[2025-12-18 11:53:11] local.INFO: [ENTRADA] Mensagem recebida de: 553199380844@s.whatsapp.net | Instance: N8n | fromMe: SIM | Grupo: NÃO  
-[2025-12-18 11:53:17] local.INFO: Resposta final da IA (job): {"resposta":"Oi! Estou bem, obrigado por perguntar! E você, como está? Se precisar de ajuda com algo específico, como testes de webhook ou qualquer outra questão, estou aqui para ajudar!"} 
-[2025-12-18 11:53:25] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
-[2025-12-18 11:53:25] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB0C7433A2EA1E6630F1DDFCA8260D6E4575CE6\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Oi! Estou bem, obrigado por perguntar! E você, como está? Se precisar de ajuda com algo específico, como testes de webhook ou qualquer outra questão, estou aqui para ajudar!\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1766058805,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 
+[2026-01-06 19:10:25] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"5511999785770@s.whatsapp.net","fromMe":false,"source":"test-script","ip":"127.0.0.1","xff":null} 
+[2026-01-06 19:10:25] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"instance":"N8n","data":{"key":{"remoteJid":"5511999785770@s.whatsapp.net","id":"TEST_1767726625_3265","fromMe":false},"message":{"conversation":"Olá"},"source":"test-script"}}} 
+[2026-01-06 19:10:25] local.INFO: Webhook in sync mode; processing inline  
+[2026-01-06 19:10:25] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"5511999785770@s.whatsapp.net","senderPn":null,"isGrupo":false,"clienteId":"5511999785770"} 
+[2026-01-06 19:10:25] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"5511999785770@s.whatsapp.net","senderPn":null,"fromMe":false,"isGrupo":false,"source":"test-script"} 
+[2026-01-06 19:10:25] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-06 19:10:25] local.INFO: [ENTRADA] Mensagem recebida de: 5511999785770@s.whatsapp.net | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-06 19:10:26] local.INFO: [THREAD] Criando nova thread {"cliente":"5511999785770","thread_id":"thread_JltPpqYSOAXFJDagm7cGM8Uu","antiga_id":null} 
+[2026-01-06 19:10:26] local.INFO: [SAUDACAO] Detectada saudação inicial do cliente {"cliente":"5511999785770","saudacao":"Olá"} 
+[2026-01-06 19:10:26] local.INFO: [THREAD] Thread criada/consolidada com sucesso {"cliente":"5511999785770","thread_id":"thread_JltPpqYSOAXFJDagm7cGM8Uu","saudacao_inicial":"Olá"} 
+[2026-01-06 19:10:26] local.INFO: [EVENT] lead_created {"numero_cliente":"5511999785770","property_id":null,"metadata":{"objetivo":null,"primeira_mensagem":"Olá"}} 
+[2026-01-06 19:10:26] local.INFO: [SLOTS] Inicializados conforme objetivo {"numero_cliente":"5511999785770","objetivo":null,"slots_count":6} 
+[2026-01-06 19:10:26] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"5511999785770","intent":"saudacao","estado_atual":"STATE_START","mensagem":"Olá"} 
+[2026-01-06 19:10:26] local.INFO: [STATE-MACHINE] Transição de estado {"numero_cliente":"5511999785770","de":"STATE_START","para":"STATE_LGPD"} 
+[2026-01-06 19:10:36] local.INFO: [SLOTS] Estado atualizado na thread {"thread_id":"thread_JltPpqYSOAXFJDagm7cGM8Uu","slots":{"nome":null,"telefone_whatsapp":null,"email":null,"cidade":null,"preferencia_contato":null,"melhor_horario_contato":null}} 
+[2026-01-06 19:10:36] local.INFO: Resposta final da IA (job): {"resposta_limpa":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.","resposta_bruta":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.","resposta_envio":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","slots_salvos":{"nome":null,"telefone_whatsapp":null,"email":null,"cidade":null,"preferencia_contato":null,"melhor_horario_contato":null},"estado_atual":"STATE_LGPD"} 
+[2026-01-06 19:10:36] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"5511999785770"} 
+[2026-01-06 19:10:36] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":1,"payload":{"number":"5511999785770","text":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"5511999785770@s.whatsapp.net"}} 
+[2026-01-06 19:10:36] local.WARNING: Erro 5xx na Evolution API; aplicando backoff {"status":500,"body":"{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Connection Closed\"}}","aguardando_segundos":1} 
+[2026-01-06 19:10:37] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":2,"payload":{"number":"5511999785770","text":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"5511999785770@s.whatsapp.net"}} 
+[2026-01-06 19:10:38] local.WARNING: Erro 5xx na Evolution API; aplicando backoff {"status":500,"body":"{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Connection Closed\"}}","aguardando_segundos":2} 
+[2026-01-06 19:10:40] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":3,"payload":{"number":"5511999785770","text":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, gostaria de explicar brevemente sobre a proteção dos seus dados. Estamos em conformidade com a Lei Geral de Proteção de Dados (LGPD) e, por isso, preciso do seu consentimento para usar seus dados pessoais e enviar opções personalizadas.
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+1️⃣ Sim, pode usar meus dados  
+2️⃣ Não, prefiro sem cadastro  
+
+Aguardo sua resposta para continuarmos!  
+
+  
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"5511999785770@s.whatsapp.net"}} 
+[2026-01-06 19:10:40] local.WARNING: Erro 5xx na Evolution API; aplicando backoff {"status":500,"body":"{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Connection Closed\"}}","aguardando_segundos":4} 
+[2026-01-06 19:10:44] local.WARNING: Envio para contato individual falhou; tentando fallback com jid. {"status":500,"body":"{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Connection Closed\"}}","jid":"5511999785770@s.whatsapp.net"} 
+[2026-01-06 19:10:47] local.INFO: Resposta da API Evolution ao envio (job): {"status":500,"body":"{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Connection Closed\"}}","number":"5511999785770","jid":"5511999785770@s.whatsapp.net","source":"agente-ia"} 
+[2026-01-06 19:11:39] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"ios","ip":"127.0.0.1","xff":null} 
+[2026-01-06 19:11:39] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3AC500FD508BDF6A9FA1","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"Olá","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"2ci63xcYuQeWHQ==","senderTimestamp":"1767720963","recipientKeyHash":"j2lCQHivyoVt9w==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"6uVdzn46emsaejWcjUqvRMHQ6TwqFlmzUwf5EnFDa7c="}},"messageType":"conversation","messageTimestamp":1767726695,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"ios"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-06T16:11:39.699Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-06 19:11:39] local.INFO: Webhook in sync mode; processing inline  
+[2026-01-06 19:11:39] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-06 19:11:39] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"ios"} 
+[2026-01-06 19:11:39] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-06 19:11:39] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-06 19:11:40] local.INFO: [THREAD] Criando nova thread {"cliente":"553199380844","thread_id":"thread_ESsRmc2PfzkiOD91RJIrEn8G","antiga_id":null} 
+[2026-01-06 19:11:40] local.INFO: [SAUDACAO] Detectada saudação inicial do cliente {"cliente":"553199380844","saudacao":"Olá"} 
+[2026-01-06 19:11:40] local.INFO: [THREAD] Thread criada/consolidada com sucesso {"cliente":"553199380844","thread_id":"thread_ESsRmc2PfzkiOD91RJIrEn8G","saudacao_inicial":"Olá"} 
+[2026-01-06 19:11:40] local.INFO: [EVENT] lead_created {"numero_cliente":"553199380844","property_id":null,"metadata":{"objetivo":null,"primeira_mensagem":"Olá"}} 
+[2026-01-06 19:11:40] local.INFO: [SLOTS] Inicializados conforme objetivo {"numero_cliente":"553199380844","objetivo":null,"slots_count":6} 
+[2026-01-06 19:11:40] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"553199380844","intent":"saudacao","estado_atual":"STATE_START","mensagem":"Olá"} 
+[2026-01-06 19:11:40] local.INFO: [STATE-MACHINE] Transição de estado {"numero_cliente":"553199380844","de":"STATE_START","para":"STATE_LGPD"} 
+[2026-01-06 19:11:49] local.INFO: Resposta final da IA (job): {"resposta_limpa":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, preciso explicar sobre a proteção de dados. De acordo com a LGPD (Lei Geral de Proteção de Dados), suas informações são protegidas e não serão utilizadas sem seu consentimento. 
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? Por favor, escolha uma das opções:
+1️⃣ Sim, pode usar meus dados
+2️⃣ Não, prefiro sem cadastro
+
+Aguardo sua resposta! 
+
+E lembre-se: você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_bruta":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, preciso explicar sobre a proteção de dados. De acordo com a LGPD (Lei Geral de Proteção de Dados), suas informações são protegidas e não serão utilizadas sem seu consentimento. 
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? Por favor, escolha uma das opções:
+1️⃣ Sim, pode usar meus dados
+2️⃣ Não, prefiro sem cadastro
+
+Aguardo sua resposta! 
+
+E lembre-se: você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_envio":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, preciso explicar sobre a proteção de dados. De acordo com a LGPD (Lei Geral de Proteção de Dados), suas informações são protegidas e não serão utilizadas sem seu consentimento. 
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? Por favor, escolha uma das opções:
+1️⃣ Sim, pode usar meus dados
+2️⃣ Não, prefiro sem cadastro
+
+Aguardo sua resposta! 
+
+E lembre-se: você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","slots_salvos":null,"estado_atual":"STATE_LGPD"} 
+[2026-01-06 19:11:49] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
+[2026-01-06 19:11:49] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":1,"payload":{"number":"553199380844","text":"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?
+
+Antes de prosseguirmos, preciso explicar sobre a proteção de dados. De acordo com a LGPD (Lei Geral de Proteção de Dados), suas informações são protegidas e não serão utilizadas sem seu consentimento. 
+
+Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? Por favor, escolha uma das opções:
+1️⃣ Sim, pode usar meus dados
+2️⃣ Não, prefiro sem cadastro
+
+Aguardo sua resposta! 
+
+E lembre-se: você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"553199380844@s.whatsapp.net"}} 
+[2026-01-06 19:11:50] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB0F9142E5A3B880AA93FD285CD7AD5114D8CD4\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Olá! Eu sou o assistente da Minha Empresa. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?\\n\\nAntes de prosseguirmos, preciso explicar sobre a proteção de dados. De acordo com a LGPD (Lei Geral de Proteção de Dados), suas informações são protegidas e não serão utilizadas sem seu consentimento. \\n\\nPosso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? Por favor, escolha uma das opções:\\n1️⃣ Sim, pode usar meus dados\\n2️⃣ Não, prefiro sem cadastro\\n\\nAguardo sua resposta! \\n\\nE lembre-se: você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.\\n\\nAtalhos: Ver imóveis | Agendar visita | Falar com corretor\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1767726710,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 
+[2026-01-06 19:12:07] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"ios","ip":"127.0.0.1","xff":null} 
+[2026-01-06 19:12:07] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3A0E78CF980C6F5A8348","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"Agendar visita","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"2ci63xcYuQeWHQ==","senderTimestamp":"1767720963","recipientKeyHash":"j2lCQHivyoVt9w==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"MyViRyHYBAtr0NO+OiK8VsuMl5LVyHSM9gQJjHrIMB0="}},"messageType":"conversation","messageTimestamp":1767726727,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"ios"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-06T16:12:06.921Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-06 19:12:07] local.INFO: Webhook in sync mode; processing inline  
+[2026-01-06 19:12:07] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-06 19:12:07] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"ios"} 
+[2026-01-06 19:12:07] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-06 19:12:07] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-06 19:12:07] local.INFO: [THREAD] Reutilizando thread existente {"cliente":"553199380844","thread_id":"thread_ESsRmc2PfzkiOD91RJIrEn8G","idade_horas":0} 
+[2026-01-06 19:12:07] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"553199380844","intent":"agendar_visita","estado_atual":"STATE_LGPD","mensagem":"Agendar visita"} 
+[2026-01-06 19:12:07] local.INFO: [STATE-MACHINE] Transição de estado {"numero_cliente":"553199380844","de":"STATE_LGPD","para":"STATE_OBJETIVO"} 
+[2026-01-06 19:12:16] local.INFO: Resposta final da IA (job): {"resposta_limpa":"Para agendar sua visita, preciso de algumas informações antes. Vamos lá! 😊
+
+Primeiro, por favor, me confirme: posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+Se você consente, responda com 'sim', 'concordo', 'aceito' ou algo similar. Assim que eu tiver sua confirmação, seguiremos para o agendamento.
+
+E, claro, você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_bruta":"Para agendar sua visita, preciso de algumas informações antes. Vamos lá! 😊
+
+Primeiro, por favor, me confirme: posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+Se você consente, responda com 'sim', 'concordo', 'aceito' ou algo similar. Assim que eu tiver sua confirmação, seguiremos para o agendamento.
+
+E, claro, você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_envio":"Para agendar sua visita, preciso de algumas informações antes. Vamos lá! 😊
+
+Primeiro, por favor, me confirme: posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+Se você consente, responda com 'sim', 'concordo', 'aceito' ou algo similar. Assim que eu tiver sua confirmação, seguiremos para o agendamento.
+
+E, claro, você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","slots_salvos":null,"estado_atual":"STATE_LGPD"} 
+[2026-01-06 19:12:16] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
+[2026-01-06 19:12:16] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":1,"payload":{"number":"553199380844","text":"Para agendar sua visita, preciso de algumas informações antes. Vamos lá! 😊
+
+Primeiro, por favor, me confirme: posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? 
+
+Se você consente, responda com 'sim', 'concordo', 'aceito' ou algo similar. Assim que eu tiver sua confirmação, seguiremos para o agendamento.
+
+E, claro, você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"553199380844@s.whatsapp.net"}} 
+[2026-01-06 19:12:16] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB031EAE41CC187E02E3413F2F981CAC972F0C4\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Para agendar sua visita, preciso de algumas informações antes. Vamos lá! 😊\\n\\nPrimeiro, por favor, me confirme: posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD? \\n\\nSe você consente, responda com 'sim', 'concordo', 'aceito' ou algo similar. Assim que eu tiver sua confirmação, seguiremos para o agendamento.\\n\\nE, claro, você também pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.\\n\\nAtalhos: Ver imóveis | Agendar visita | Falar com corretor\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1767726736,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 
+[2026-01-06 19:12:45] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"ios","ip":"127.0.0.1","xff":null} 
+[2026-01-06 19:12:45] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3A0AF5BFA1C5F96B26B1","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"Quero comprar galinhas","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"2ci63xcYuQeWHQ==","senderTimestamp":"1767720963","recipientKeyHash":"j2lCQHivyoVt9w==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"J8yhFPISgj7g7nMpCHXStOLCsW8Q77Pg8K2La2heyAs="}},"messageType":"conversation","messageTimestamp":1767726766,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"ios"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-06T16:12:45.759Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-06 19:12:45] local.INFO: Webhook in sync mode; processing inline  
+[2026-01-06 19:12:45] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-06 19:12:45] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"ios"} 
+[2026-01-06 19:12:45] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-06 19:12:45] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-06 19:12:46] local.INFO: [THREAD] Reutilizando thread existente {"cliente":"553199380844","thread_id":"thread_ESsRmc2PfzkiOD91RJIrEn8G","idade_horas":0} 
+[2026-01-06 19:12:46] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"553199380844","intent":"comprar_imovel","estado_atual":"STATE_LGPD","mensagem":"Quero comprar galinhas"} 
+[2026-01-06 19:12:46] local.INFO: [STATE-MACHINE] Transição de estado {"numero_cliente":"553199380844","de":"STATE_LGPD","para":"STATE_OBJETIVO"} 
+[2026-01-06 19:12:53] local.INFO: Resposta final da IA (job): {"resposta_limpa":"Parece que você mencionou galinhas, mas nossa especialidade é em imóveis, como casas e apartamentos. Posso ajudar você a comprar um imóvel? 
+
+Se sim, preciso que me confirme se posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD. 
+
+Por favor, responda com 'sim', 'concordo', 'aceito' ou similar. Assim que eu tiver sua confirmação, seguiremos para o objetivo de compra.
+
+E lembre-se: você pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_bruta":"Parece que você mencionou galinhas, mas nossa especialidade é em imóveis, como casas e apartamentos. Posso ajudar você a comprar um imóvel? 
+
+Se sim, preciso que me confirme se posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD. 
+
+Por favor, responda com 'sim', 'concordo', 'aceito' ou similar. Assim que eu tiver sua confirmação, seguiremos para o objetivo de compra.
+
+E lembre-se: você pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.","resposta_envio":"Parece que você mencionou galinhas, mas nossa especialidade é em imóveis, como casas e apartamentos. Posso ajudar você a comprar um imóvel? 
+
+Se sim, preciso que me confirme se posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD. 
+
+Por favor, responda com 'sim', 'concordo', 'aceito' ou similar. Assim que eu tiver sua confirmação, seguiremos para o objetivo de compra.
+
+E lembre-se: você pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","slots_salvos":null,"estado_atual":"STATE_LGPD"} 
+[2026-01-06 19:12:53] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
+[2026-01-06 19:12:53] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":1,"payload":{"number":"553199380844","text":"Parece que você mencionou galinhas, mas nossa especialidade é em imóveis, como casas e apartamentos. Posso ajudar você a comprar um imóvel? 
+
+Se sim, preciso que me confirme se posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD. 
+
+Por favor, responda com 'sim', 'concordo', 'aceito' ou similar. Assim que eu tiver sua confirmação, seguiremos para o objetivo de compra.
+
+E lembre-se: você pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.
+
+Atalhos: Ver imóveis | Agendar visita | Falar com corretor","jid":"553199380844@s.whatsapp.net"}} 
+[2026-01-06 19:12:54] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB0C534DD6C4255A582C3DCA4627ACCD76B16AD\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Parece que você mencionou galinhas, mas nossa especialidade é em imóveis, como casas e apartamentos. Posso ajudar você a comprar um imóvel? \\n\\nSe sim, preciso que me confirme se posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD. \\n\\nPor favor, responda com 'sim', 'concordo', 'aceito' ou similar. Assim que eu tiver sua confirmação, seguiremos para o objetivo de compra.\\n\\nE lembre-se: você pode acessar atalhos como Ver imóveis | Agendar visita | Falar com corretor.\\n\\nAtalhos: Ver imóveis | Agendar visita | Falar com corretor\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1767726774,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 

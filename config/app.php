@@ -129,4 +129,7 @@ return [
     'check_number_before_send' => env('CHECK_NUMBER_BEFORE_SEND', false),
     'always_include_jid' => env('ALWAYS_INCLUDE_JID', true),
 
+    // Código do país para normalizar números WhatsApp (E.164)
+    'whatsapp_country_code' => env('WHATSAPP_COUNTRY_CODE', '55'),
+
 ];

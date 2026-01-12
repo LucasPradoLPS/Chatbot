@@ -1,3 +1,8 @@
+<IfModule mod_php.c>
+    php_value max_execution_time 120
+    php_value default_socket_timeout 120
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

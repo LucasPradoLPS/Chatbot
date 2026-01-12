@@ -9,7 +9,8 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Follow-ups automáticos a cada 30 minutos
+        $schedule->command('app:schedule-followups')->everyThirtyMinutes();
     }
 
     protected function commands(): void

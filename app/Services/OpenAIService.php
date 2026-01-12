@@ -48,4 +48,46 @@ class OpenAIService
 
         return $assistantId;
     }
+
+    /**
+     * Update an existing Assistant in OpenAI
+     *
+     * @param string $assistantId
+     * @param string $name
+     * @param string $instructions
+     * @param string|null $model
+     * @return array Response from OpenAI
+     * @throws \RuntimeException When API key missing or request fails
+     */
+    public function updateAssistant(string $assistantId, string $name, string $instructions, ?string $model = null): array
+    {
+        $apiKey = config('services.openai.key');
+        if (!$apiKey) {
+            throw new \RuntimeException('OPENAI_KEY não configurada em .env');
+        }
+
+        $data = [
+            'name' => $name,
+            'instructions' => $instructions,
+        ];
+
+        if ($model) {
+            $data['model'] = $model;
+        }
+
+        $response = Http::withToken($apiKey)
+            ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+            ->post("https://api.openai.com/v1/assistants/{$assistantId}", $data);
+
+        if ($response->failed()) {
+            Log::error('Falha ao atualizar Assistant na OpenAI', [
+                'assistant_id' => $assistantId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new \RuntimeException('Erro ao atualizar Assistant na OpenAI: ' . $response->body());
+        }
+
+        return $response->json();
+    }
 }
