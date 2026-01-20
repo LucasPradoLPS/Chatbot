@@ -132,6 +132,18 @@ class MediaProcessor
             if ($fileSize > $this->maxFileSize) {
                 throw new Exception("Imagem muito grande: {$fileSize} bytes (máximo {$this->maxFileSize})");
             }
+            
+            // Valida se a imagem é realmente um arquivo de imagem válido
+            // Verifica magic bytes do arquivo
+            if (!$this->validarFormatoImagem($imageData, $mimetype)) {
+                Log::warning('Arquivo de imagem inválido ou corrompido', [
+                    'url' => $url,
+                    'mimetype' => $mimetype,
+                    'tamanho' => $fileSize,
+                    'primeiros_bytes' => bin2hex(substr($imageData, 0, 16))
+                ]);
+                // Continua mesmo assim, pode ser arquivo válido mas magic bytes diferente
+            }
 
             // Armazena arquivo localmente
             $filename = uniqid('img_') . '.' . $this->getExtensao($mimetype);
@@ -366,10 +378,7 @@ class MediaProcessor
                 return "📷 Imagem recebida. Arquivo não encontrado para análise.";
             }
 
-            // Converte para base64 (mais confiável que URL temporária)
-            $base64 = base64_encode($conteudoImagem);
-            
-            // Detecta MIME type do caminho (img_xxx.jpg, img_xxx.png, etc)
+            // Detecta MIME type primeiro
             $extensao = strtolower(pathinfo($imagemLocalPath, PATHINFO_EXTENSION));
             $mimeMap = [
                 'jpg' => 'image/jpeg',
@@ -379,6 +388,32 @@ class MediaProcessor
                 'webp' => 'image/webp'
             ];
             $mediaType = $mimeMap[$extensao] ?? 'image/jpeg';
+            
+            // Valida tamanho do arquivo para base64 (OpenAI tem limite de ~20MB)
+            $fileSize = strlen($conteudoImagem);
+            $maxSize = 20 * 1024 * 1024; // 20MB
+            
+            if ($fileSize > $maxSize) {
+                Log::warning('Imagem muito grande para análise', [
+                    'caminho' => $imagemLocalPath,
+                    'tamanho' => $fileSize,
+                    'limite' => $maxSize
+                ]);
+                return "📷 Imagem recebida. Arquivo muito grande para análise (máximo 20MB).";
+            }
+
+            // Converte para base64 (mais confiável que URL temporária)
+            $base64 = base64_encode($conteudoImagem);
+            
+            // Valida se base64 foi gerado corretamente
+            if (empty($base64) || strlen($base64) < 100) {
+                Log::error('Base64 inválido gerado', [
+                    'caminho' => $imagemLocalPath,
+                    'tamanho_original' => $fileSize,
+                    'tamanho_base64' => strlen($base64)
+                ]);
+                return "📷 Imagem recebida. Erro ao processar arquivo para análise.";
+            }
 
             $response = Http::withToken($this->openaiKey)
                 ->timeout(30)
@@ -531,6 +566,49 @@ class MediaProcessor
 
         return $map[$mimetype] ?? 'bin';
     }
+
+    /**
+     * Valida se o conteúdo é realmente uma imagem verificando magic bytes
+     */
+    private function validarFormatoImagem(string $conteudo, string $mimetype): bool
+    {
+        if (empty($conteudo)) {
+            return false;
+        }
+
+        // Magic bytes para diferentes formatos de imagem
+        $magicBytes = [
+            'image/jpeg' => [
+                pack('H*', 'FFD8FF'),
+                pack('H*', 'FFD8FF')
+            ],
+            'image/png' => [
+                pack('H*', '89504E47')
+            ],
+            'image/gif' => [
+                pack('H*', '47494638')
+            ],
+            'image/webp' => [
+                pack('H*', '52494646'),
+                pack('H*', '57454250')
+            ]
+        ];
+
+        if (!isset($magicBytes[$mimetype])) {
+            return true; // Tipo desconhecido, passa
+        }
+
+        $bytes = substr($conteudo, 0, 4);
+        
+        foreach ($magicBytes[$mimetype] as $magic) {
+            if (strpos($bytes, $magic) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * Limpa arquivos antigos (mais de X dias)
