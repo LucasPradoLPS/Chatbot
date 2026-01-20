@@ -18,6 +18,7 @@ use App\Models\MensagensMemoria;
 use App\Models\IaIntervencao;
 use App\Models\Thread;
 use App\Services\IntentDetector;
+use Exception;
 
 // Aumentar timeout para 10 minutos para requisições OpenAI com polling
 set_time_limit(600);
@@ -1911,8 +1912,25 @@ class ProcessWhatsappMessage implements ShouldQueue
                     $conteudo = $resultado['conteudo_extraido'] ?? '';
                     $tipoMidia = $resultado['tipo_midia'] ?? $tipoMensagem;
                     
-                    // Monta resposta contextualizada
-                    $resposta = $this->montarRespostaMedia($tipoMidia, $conteudo, $thread);
+                    // 🆕 ENVIAR CONTEÚDO EXTRAÍDO PARA O ASSISTENTE IA
+                    // Monta mensagem estruturada com o conteúdo extraído
+                    $mensagemParaIA = $this->montarMensagemMidiaParaIA($tipoMidia, $conteudo);
+                    
+                    // Envia para o assistente OpenAI processar
+                    $respostaIA = $this->enviarConteudoMidiaParaIA(
+                        $thread->thread_id,
+                        $thread->assistente_id ?? null,
+                        $mensagemParaIA,
+                        $clienteId
+                    );
+                    
+                    // Se IA processou com sucesso, usa resposta da IA
+                    // Senão, usa resposta genérica
+                    if ($respostaIA) {
+                        $resposta = $respostaIA;
+                    } else {
+                        $resposta = $this->montarRespostaMedia($tipoMidia, $conteudo, $thread);
+                    }
                     
                     // Armazena informação da mídia no histórico do thread
                     if ($thread->estado_historico === null) {
@@ -1926,7 +1944,8 @@ class ProcessWhatsappMessage implements ShouldQueue
                         'tipo_midia' => $tipoMidia,
                         'arquivo_local' => $resultado['arquivo_local'] ?? null,
                         'conteudo_chars' => strlen($conteudo),
-                        'metadados' => $resultado['metadados'] ?? []
+                        'metadados' => $resultado['metadados'] ?? [],
+                        'processada_pela_ia' => (bool) $respostaIA
                     ];
                     
                     $thread->update(['estado_historico' => $historico]);
@@ -1935,7 +1954,8 @@ class ProcessWhatsappMessage implements ShouldQueue
                         'tipo' => $tipoMidia,
                         'cliente' => $clienteId,
                         'thread_id' => $thread->id,
-                        'arquivo' => $resultado['arquivo_local'] ?? null
+                        'arquivo' => $resultado['arquivo_local'] ?? null,
+                        'processada_pela_ia' => (bool) $respostaIA
                     ]);
                 }
             }
@@ -2011,6 +2031,140 @@ class ProcessWhatsappMessage implements ShouldQueue
                 return "✅ *Arquivo recebido e analisado!*\n\n" .
                        $conteudo . "\n\n" .
                        "Como posso ajudá-lo? 😊";
+        }
+    }
+
+    /**
+     * Monta mensagem estruturada com conteúdo extraído de mídia para enviar ao assistente IA
+     * Inclui contexto sobre o tipo de arquivo e seu conteúdo
+     */
+    private function montarMensagemMidiaParaIA(string $tipoMidia, string $conteudo): string
+    {
+        $tiposDescritivos = [
+            'image' => 'uma imagem',
+            'pdf' => 'um documento PDF',
+            'document' => 'um documento',
+            'audio' => 'um arquivo de áudio'
+        ];
+        
+        $tipoDesc = $tiposDescritivos[$tipoMidia] ?? 'um arquivo';
+        
+        // Limita conteúdo para não exceder límite de tokens (máx 2000 chars)
+        if (strlen($conteudo) > 2000) {
+            $conteudo = substr($conteudo, 0, 1997) . '...';
+        }
+        
+        return "[ARQUIVO RECEBIDO: {$tipoMidia}]\n\n" .
+               "O usuário enviou {$tipoDesc}. Aqui está o conteúdo analisado:\n\n" .
+               $conteudo . "\n\n" .
+               "Por favor, processe este conteúdo e responda ao usuário de forma útil e contextualizada.";
+    }
+
+    /**
+     * Envia conteúdo extraído de mídia para o assistente OpenAI processar
+     * Retorna resposta da IA ou null se falhar
+     */
+    private function enviarConteudoMidiaParaIA(string $threadId, ?string $assistantId, string $mensagem, string $clienteId): ?string
+    {
+        try {
+            // Se não temos assistantId, não processamos pela IA
+            if (!$assistantId) {
+                Log::info('[MIDIA] Sem assistentId; conteúdo não processado pela IA', [
+                    'cliente' => $clienteId,
+                ]);
+                return null;
+            }
+            
+            // Envia mensagem ao thread
+            $responseMsg = Http::withToken(config('services.openai.key'))
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->post("https://api.openai.com/v1/threads/{$threadId}/messages", [
+                    'role' => 'user',
+                    'content' => $mensagem,
+                ]);
+
+            if ($responseMsg->failed()) {
+                Log::warning('[MIDIA] Falha ao enviar mensagem ao thread', [
+                    'thread_id' => $threadId,
+                    'status' => $responseMsg->status(),
+                    'cliente' => $clienteId,
+                ]);
+                return null;
+            }
+
+            // Cria run para processar
+            $runResponseObj = Http::withToken(config('services.openai.key'))
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->post("https://api.openai.com/v1/threads/{$threadId}/runs", [
+                    'assistant_id' => $assistantId,
+                ]);
+
+            $runResponse = $runResponseObj->json();
+            $runId = $runResponse['id'] ?? null;
+            
+            if (!$runId) {
+                Log::warning('[MIDIA] Falha ao criar run', [
+                    'thread_id' => $threadId,
+                    'status' => $runResponseObj->status(),
+                    'cliente' => $clienteId,
+                ]);
+                return null;
+            }
+
+            // Aguarda conclusão (com timeout de 30 segundos)
+            $maxAttempts = 30; // 30 tentativas
+            $attempt = 0;
+            
+            while ($attempt < $maxAttempts) {
+                sleep(1);
+                $attempt++;
+                
+                $statusResponse = Http::withToken(config('services.openai.key'))
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->get("https://api.openai.com/v1/threads/{$threadId}/runs/{$runId}");
+
+                $status = $statusResponse['status'] ?? null;
+                
+                if ($status === 'completed') {
+                    // Busca a resposta
+                    $messagesResponse = Http::withToken(config('services.openai.key'))
+                        ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                        ->get("https://api.openai.com/v1/threads/{$threadId}/messages");
+
+                    $messages = $messagesResponse['data'] ?? [];
+                    
+                    // Encontra primeira mensagem do assistente (mais recente)
+                    foreach ($messages as $msg) {
+                        if ($msg['role'] === 'assistant') {
+                            $conteudo = $msg['content'][0]['text']['value'] ?? null;
+                            if ($conteudo) {
+                                Log::info('[MIDIA] Resposta gerada pela IA', [
+                                    'cliente' => $clienteId,
+                                    'thread_id' => $threadId,
+                                    'resposta_chars' => strlen($conteudo),
+                                ]);
+                                return $conteudo;
+                            }
+                        }
+                    }
+                    break;
+                } elseif ($status === 'failed' || $status === 'expired' || $status === 'cancelled') {
+                    Log::warning('[MIDIA] Run falhou/expirou/cancelada', [
+                        'thread_id' => $threadId,
+                        'status' => $status,
+                        'cliente' => $clienteId,
+                    ]);
+                    break;
+                }
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            Log::error('[MIDIA] Erro ao processar conteúdo pela IA', [
+                'cliente' => $clienteId,
+                'erro' => $e->getMessage(),
+            ]);
+            return null;
         }
     }
 }

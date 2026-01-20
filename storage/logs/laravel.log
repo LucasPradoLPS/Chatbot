@@ -983,3 +983,62 @@ Se preferir, podemos tentar de outro jeito:
 Me diga bairro + valor máximo + quartos.
 Ex: “Tatuapé até 450 mil 2 quartos”","jid":"553191666033@s.whatsapp.net"}} 
 [2026-01-20 15:08:39] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553191666033@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB0F546ED4AE39DFA7D5A96C8FEB03AE7EAF1B2\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"Não entendi certinho. Você quer comprar, alugar ou falar com um corretor?\\n\\nSe preferir, podemos tentar de outro jeito:\\nMe diga bairro + valor máximo + quartos.\\nEx: “Tatuapé até 450 mil 2 quartos”\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1768932519,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553191666033","jid":"553191666033@s.whatsapp.net","source":"agente-ia"} 
+[2026-01-20 15:13:04] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"web","ip":"127.0.0.1","xff":null} 
+[2026-01-20 15:13:04] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3EB0404A335861EBE21C90","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"7","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"H+jgujM4OHtoHg==","senderTimestamp":"1768839768","senderAccountType":"E2EE","receiverAccountType":"E2EE","recipientKeyHash":"qKajunTtkjUZ7A==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"qWlS4KdnfwN5s9scr6q7CKVaf7KYxUay3IQAaC2Ot9w=","limitSharingV2":{"sharingLimited":false,"trigger":"UNKNOWN","limitSharingSettingTimestamp":"0","initiatedByMe":false}}},"messageType":"conversation","messageTimestamp":1768932785,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"web"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-20T15:13:04.451Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-20 15:13:04] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-20 15:13:04] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"web"} 
+[2026-01-20 15:13:04] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-20 15:13:04] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-20 15:13:04] local.INFO: [THREAD] Reutilizando thread existente {"cliente":"553199380844","thread_id":"thread_FRLNGY6gzwod7D9P8FnM5gfM","idade_horas":0} 
+[2026-01-20 15:13:04] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"553199380844","intent":"indefinido","estado_atual":"STATE_HANDOFF","mensagem":"7"} 
+[2026-01-20 15:13:04] local.INFO: [HANDOFF] Não processando pela IA - em estado de handoff {"numero_cliente":"553199380844","estado_atual":"STATE_HANDOFF"} 
+[2026-01-20 15:13:04] local.ERROR: [DEBUG] Erro capturado {"mensagem":"Undefined variable $slotsExtraidos","arquivo":"C:\\Users\\lucas\\Downloads\\Chatbot-laravel\\app\\Jobs\\ProcessWhatsappMessage.php","linha":1527,"tipo":"ErrorException"} 
+[2026-01-20 15:13:22] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"web","ip":"127.0.0.1","xff":null} 
+[2026-01-20 15:13:22] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3EB03E00972C539C32B34D","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"Olá","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"H+jgujM4OHtoHg==","senderTimestamp":"1768839768","senderAccountType":"E2EE","receiverAccountType":"E2EE","recipientKeyHash":"qKajunTtkjUZ7A==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"vIiXcAk/1AfyzTSqi5vIhscb1R4kAl5rAPPYOUmIF2U=","limitSharingV2":{"sharingLimited":false,"trigger":"UNKNOWN","limitSharingSettingTimestamp":"0","initiatedByMe":false}}},"messageType":"conversation","messageTimestamp":1768932802,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"web"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-20T15:13:22.187Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-20 15:13:22] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-20 15:13:22] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"web"} 
+[2026-01-20 15:13:22] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-20 15:13:22] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-20 15:13:22] local.INFO: [THREAD] Reutilizando thread existente {"cliente":"553199380844","thread_id":"thread_FRLNGY6gzwod7D9P8FnM5gfM","idade_horas":0} 
+[2026-01-20 15:13:22] local.INFO: [MENU] Saudação detectada, respondendo com menu direto {"numero_cliente":"553199380844","mensagem":"Olá","msg_lower":"olá"} 
+[2026-01-20 15:13:22] local.INFO: [MENU] Resposta enviada com sucesso {"numero_cliente":"553199380844"} 
+[2026-01-20 15:13:27] local.INFO: Webhook received; dispatching job {"instance":"N8n","remetente":"273215804985350@lid","fromMe":false,"source":"web","ip":"127.0.0.1","xff":null} 
+[2026-01-20 15:13:27] local.DEBUG: [DEBUG] Webhook raw payload {"payload":{"event":"messages.upsert","instance":"N8n","data":{"key":{"remoteJid":"273215804985350@lid","fromMe":false,"id":"3EB0748EC9852D4D37EF4A","senderPn":"553199380844@s.whatsapp.net"},"pushName":"Lucas Prado","status":"DELIVERY_ACK","message":{"conversation":"7","messageContextInfo":{"deviceListMetadata":{"senderKeyHash":"H+jgujM4OHtoHg==","senderTimestamp":"1768839768","senderAccountType":"E2EE","receiverAccountType":"E2EE","recipientKeyHash":"qKajunTtkjUZ7A==","recipientTimestamp":"1767726664"},"deviceListMetadataVersion":2,"messageSecret":"/6MPH9zQMzK0lhI8gCGxOZGSVfsFXYHNM1Zjs5F19/Q=","limitSharingV2":{"sharingLimited":false,"trigger":"UNKNOWN","limitSharingSettingTimestamp":"0","initiatedByMe":false}}},"messageType":"conversation","messageTimestamp":1768932807,"instanceId":"02b89767-9deb-431d-a733-bbdc54b52450","source":"web"},"destination":"http://host.docker.internal:8000/api/webhook/whatsapp","date_time":"2026-01-20T15:13:27.146Z","sender":"553172430608@s.whatsapp.net","server_url":"http://localhost:8080","apikey":"AC0241EE12C7-4519-9F20-03FA7A4589F9"}} 
+[2026-01-20 15:13:27] local.DEBUG: [DEBUG] Identificador normalizado do contato {"remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","isGrupo":false,"clienteId":"553199380844"} 
+[2026-01-20 15:13:27] local.INFO: ProcessWhatsappMessage: start {"instance":"N8n","remetente":"273215804985350@lid","senderPn":"553199380844@s.whatsapp.net","fromMe":false,"isGrupo":false,"source":"web"} 
+[2026-01-20 15:13:27] local.DEBUG: [DEBUG] handle() iniciado  
+[2026-01-20 15:13:27] local.INFO: [ENTRADA] Mensagem recebida de: 273215804985350@lid | Instance: N8n | fromMe: NÃO | Grupo: NÃO  
+[2026-01-20 15:13:27] local.INFO: [THREAD] Reutilizando thread existente {"cliente":"553199380844","thread_id":"thread_FRLNGY6gzwod7D9P8FnM5gfM","idade_horas":0} 
+[2026-01-20 15:13:27] local.INFO: [EVENT] lead_created {"numero_cliente":"553199380844","property_id":null,"metadata":{"objetivo":null,"primeira_mensagem":"7"}} 
+[2026-01-20 15:13:27] local.INFO: [SLOTS] Inicializados conforme objetivo {"numero_cliente":"553199380844","objetivo":null,"slots_count":6} 
+[2026-01-20 15:13:27] local.INFO: [INTENT] Detectada intenção {"numero_cliente":"553199380844","intent":"indefinido","estado_atual":"STATE_START","mensagem":"7"} 
+[2026-01-20 15:13:31] local.INFO: Run criada com sucesso {"run_id":"run_aI0V6FUS7Vpvw9j1bDaRdCTT","assistant_id":"asst_TK2zcCJXJE7reRvMIY0Vw4im"} 
+[2026-01-20 15:13:33] local.DEBUG: Status da IA na tentativa 1 {"status":"in_progress","http_status":200,"url":"https://api.openai.com/v1/threads/thread_FRLNGY6gzwod7D9P8FnM5gfM/runs/run_aI0V6FUS7Vpvw9j1bDaRdCTT","api_key_prefix":"sk-proj-ixKWd-1pq93j...","response_keys":["id","object","created_at","assistant_id","thread_id","status","started_at","expires_at","cancelled_at","failed_at","completed_at","required_action","last_error","model","instructions","tools","tool_resources","metadata","temperature","top_p","reasoning_effort","max_completion_tokens","max_prompt_tokens","truncation_strategy","incomplete_details","usage","response_format","tool_choice","parallel_tool_calls"]} 
+[2026-01-20 15:13:34] local.DEBUG: Status da IA na tentativa 2 {"status":"completed","http_status":200,"url":"https://api.openai.com/v1/threads/thread_FRLNGY6gzwod7D9P8FnM5gfM/runs/run_aI0V6FUS7Vpvw9j1bDaRdCTT","api_key_prefix":"sk-proj-ixKWd-1pq93j...","response_keys":["id","object","created_at","assistant_id","thread_id","status","started_at","expires_at","cancelled_at","failed_at","completed_at","required_action","last_error","model","instructions","tools","tool_resources","metadata","temperature","top_p","reasoning_effort","max_completion_tokens","max_prompt_tokens","truncation_strategy","incomplete_details","usage","response_format","tool_choice","parallel_tool_calls"]} 
+[2026-01-20 15:13:35] local.INFO: [MENU] Opção escolhida {"numero_cliente":"553199380844","opcao":"7","descricao":"falar_com_corretor"} 
+[2026-01-20 15:13:35] local.INFO: Resposta final da IA (job): {"resposta_limpa":"👨‍💼 Vou te conectar a um corretor agora.
+
+Por favor, aguarde um momento...
+
+---
+
+Meu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?","resposta_bruta":"Oi, bom dia! 👋
+
+Sou o assistente virtual da Imobiliária California! 🏠
+
+Antes de começar, preciso da sua autorização para usar seus dados. Posso continuar?","resposta_envio":"👨‍💼 Vou te conectar a um corretor agora.
+
+Por favor, aguarde um momento...
+
+---
+
+Meu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?","slots_salvos":null,"estado_atual":"STATE_HANDOFF"} 
+[2026-01-20 15:13:35] local.DEBUG: [DEBUG] Verificação de número desabilitada; enviando mesmo assim. {"number":"553199380844"} 
+[2026-01-20 15:13:35] local.DEBUG: Tentativa de envio de mensagem via Evolution {"tentativa":1,"payload":{"number":"553199380844","text":"👨‍💼 Vou te conectar a um corretor agora.
+
+Por favor, aguarde um momento...
+
+---
+
+Meu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?","jid":"553199380844@s.whatsapp.net"}} 
+[2026-01-20 15:13:35] local.INFO: Resposta da API Evolution ao envio (job): {"status":201,"body":"{\"key\":{\"remoteJid\":\"553199380844@s.whatsapp.net\",\"fromMe\":true,\"id\":\"3EB043E16136BA1FA1C5F88F799158720D23FB82\"},\"pushName\":\"Você\",\"status\":\"PENDING\",\"message\":{\"conversation\":\"👨‍💼 Vou te conectar a um corretor agora.\\n\\nPor favor, aguarde um momento...\\n\\n---\\n\\nMeu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?\"},\"contextInfo\":null,\"messageType\":\"conversation\",\"messageTimestamp\":1768932815,\"instanceId\":\"02b89767-9deb-431d-a733-bbdc54b52450\",\"source\":\"unknown\"}","number":"553199380844","jid":"553199380844@s.whatsapp.net","source":"agente-ia"} 
