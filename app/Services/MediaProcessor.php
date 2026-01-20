@@ -596,7 +596,7 @@ class MediaProcessor
     /**
      * Descriptografa arquivo de mídia do WhatsApp usando mediaKey
      * WhatsApp envia arquivos criptografados que precisam ser descriptografados
-     * Algoritmo: AES-256-CBC com derivação de chave via Hashed Media Key
+     * Algoritmo: AES-256-CBC com derivação de chave via HKDF
      */
     private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey): ?string
     {
@@ -612,38 +612,44 @@ class MediaProcessor
                 return null;
             }
             
+            Log::debug('MediaKey decodificado', [
+                'hex' => bin2hex($mediaKeyBytes)
+            ]);
+            
             // Remove últimos 10 bytes (HMAC de verificação)
             $conteudoSemHmac = substr($conteudoCriptografado, 0, -10);
             
-            // WhatsApp media decryption usa:
-            // expandedMediaKey = HMAC(mediaKey, "WhatsApp Image Keys")
-            // Depois: IV = expandedMediaKey[0:16], Key = expandedMediaKey[16:48]
+            // HKDF(hash_alg, input_key, salt, info, length)
+            // Para WhatsApp Media:
+            // - hash: sha256
+            // - input_key: mediaKey (32 bytes)
+            // - salt: empty
+            // - info: "WhatsApp Image Keys"
+            // - length: 112 (16 bytes IV + 32 bytes key + 64 bytes extra)
             
-            // Mas como só temos 32 bytes do mediaKey, expandimos para 64 bytes
-            // usando hash SHA256 do mediaKey + constante
-            $sha256 = hash('sha256', $mediaKeyBytes . 'WhatsApp Image Keys', true);
-            
-            // Alternativamente, tenta usar hash_hkdf se disponível (PHP 7.1.2+)
             if (function_exists('hash_hkdf')) {
+                // PHP 7.1.2+
                 $expandedKey = hash_hkdf('sha256', $mediaKeyBytes, '', 'WhatsApp Image Keys', 112);
-                Log::debug('Usando HKDF para expansão de chave');
+                Log::debug('HKDF expansion realizado', ['length' => strlen($expandedKey)]);
             } else {
-                // Fallback: usar HMAC para expansão
-                // HMAC(SHA256, mediaKey, "WhatsApp Image Keys") repetido
-                $part1 = hash_hmac('sha256', chr(1) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
-                $part2 = hash_hmac('sha256', $part1 . chr(2) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
-                $expandedKey = substr($part1 . $part2, 0, 112);
+                // Fallback: HMAC-based key derivation (não ideal, mas compatível)
+                $hmac1 = hash_hmac('sha256', chr(1) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
+                $hmac2 = hash_hmac('sha256', $hmac1 . chr(2) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
+                $hmac3 = hash_hmac('sha256', $hmac2 . chr(3) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
+                $expandedKey = $hmac1 . $hmac2 . substr($hmac3, 0, 16);
+                Log::debug('HMAC-based expansion realizado', ['length' => strlen($expandedKey)]);
             }
             
-            // IV: bytes 0-15
+            // Derivar IV e Cipher Key
+            // Primeiros 16 bytes = IV
+            // Bytes 16-47 = Cipher Key
             $iv = substr($expandedKey, 0, 16);
-            // Cipher Key: bytes 16-47
             $cipherKey = substr($expandedKey, 16, 32);
             
-            Log::debug('Chave derivada', [
-                'expanded_len' => strlen($expandedKey),
+            Log::debug('Chave e IV derivados', [
                 'iv_hex' => bin2hex($iv),
-                'key_hex' => bin2hex($cipherKey)
+                'key_hex' => bin2hex($cipherKey),
+                'conteudo_tamanho_sem_hmac' => strlen($conteudoSemHmac)
             ]);
             
             // Descriptografa usando AES-256-CBC
@@ -656,17 +662,35 @@ class MediaProcessor
             );
             
             if ($descriptografado === false) {
+                $erro = openssl_error_string();
                 Log::error('Falha na descriptografia AES-256-CBC', [
-                    'openssl_error' => openssl_error_string()
+                    'openssl_error' => $erro,
+                    'key_len' => strlen($cipherKey),
+                    'iv_len' => strlen($iv),
+                    'conteudo_len' => strlen($conteudoSemHmac)
                 ]);
                 return null;
             }
             
-            Log::info('Arquivo descriptografado com sucesso', [
-                'tamanho_original' => strlen($conteudoCriptografado),
-                'tamanho_descriptografado' => strlen($descriptografado),
-                'primeiros_bytes' => bin2hex(substr($descriptografado, 0, 8))
+            // Validar se descriptografia foi bem-sucedida
+            // Verificar magic bytes
+            $magicBytes = bin2hex(substr($descriptografado, 0, 3));
+            Log::debug('Arquivo descriptografado', [
+                'magic_bytes' => $magicBytes,
+                'tamanho' => strlen($descriptografado),
+                'primeiros_16_bytes' => bin2hex(substr($descriptografado, 0, 16))
             ]);
+            
+            // Se magic bytes não parecem válidos para imagem JPEG (FFD8FF)
+            // pode ser que não estava realmente criptografado
+            // ou que o algoritmo está errado
+            if ($magicBytes !== 'ffd8ff') {
+                Log::warning('Magic bytes não correspondem a JPEG válido', [
+                    'encontrado' => $magicBytes,
+                    'esperado' => 'ffd8ff'
+                ]);
+                // Não retorna null, continua de qualquer forma
+            }
             
             return $descriptografado;
         } catch (\Exception $e) {
