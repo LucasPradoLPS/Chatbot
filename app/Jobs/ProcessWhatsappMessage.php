@@ -1346,7 +1346,7 @@ class ProcessWhatsappMessage implements ShouldQueue
                         $respostaLimpa = "📋 *NOTA FISCAL*\n\nA nota fiscal será emitida automaticamente após a conclusão da transação.\n\n📄 Informações necessárias:\n- Dados pessoais\n- CPF ou CNPJ\n- Dados bancários (para transferência)\n\nDeseja voltar ao menu? 1️⃣ Sim | 2️⃣ Falar com corretor";
                     } elseif ($escolha === 'falar_com_corretor') {
                         $thread->etapa_fluxo = 'handoff';
-                        $respostaLimpa = "👨‍💼 Vou te conectar a um corretor agora.\n\nPor favor, aguarde um momento...";
+                        $respostaLimpa = "👨‍💼 Vou te conectar a um corretor agora.\n\nPor favor, aguarde um momento...\n\n---\n\nMeu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?";
                     } elseif ($escolha === 'encerrar') {
                         $respostaLimpa = "👋 Obrigado por usar nosso serviço!\n\nFicamos felizes em poder ajudar. Até logo! 😊\n\nSe precisar de ajuda novamente, é só chamar. Volte sempre!";
                     }
@@ -1427,6 +1427,7 @@ class ProcessWhatsappMessage implements ShouldQueue
                 $thread->estado_historico = $estadoHistorico;
                 $thread->save();
                 $estadoAtual = 'STATE_HANDOFF';
+                $respostaLimpa = "👨‍💼 Vou te conectar a um corretor agora.\n\nPor favor, aguarde um momento...\n\n---\n\nMeu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?";
             } elseif ($intentAtual === 'reclamacao_manutencao') {
                 $thread->etapa_fluxo = 'suporte';
                 $thread->objetivo = 'suporte';
