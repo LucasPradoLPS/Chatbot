@@ -138,8 +138,8 @@ class MediaProcessor
             $caminhoLocal = "{$this->mediaPath}/images/{$filename}";
             Storage::disk($this->mediaDisk)->put($caminhoLocal, $imageData);
 
-            // Analisa com OpenAI Vision
-            $descricao = $this->analisarImagemComOpenAI($url);
+            // Analisa com OpenAI Vision (passa caminho local, não URL temporária)
+            $descricao = $this->analisarImagemComOpenAI($caminhoLocal);
 
             Log::info('Imagem processada com sucesso', [
                 'arquivo' => $caminhoLocal,
@@ -350,14 +350,36 @@ class MediaProcessor
     /**
      * Analisa imagem usando OpenAI Vision API
      * Retorna descrição estruturada do conteúdo visual
+     * 
+     * Nota: Usa base64 em vez de URL porque URLs do WhatsApp expiram rapidamente
      */
-    private function analisarImagemComOpenAI(string $imageUrl): string
+    public function analisarImagemComOpenAI(string $imagemLocalPath): string
     {
         if (!$this->openaiKey) {
             return "📷 Imagem recebida. Análise de imagem com IA não configurada.";
         }
 
         try {
+            // Lê o arquivo armazenado localmente (já não está mais no WhatsApp)
+            $conteudoImagem = Storage::disk($this->mediaDisk)->get($imagemLocalPath);
+            if (!$conteudoImagem) {
+                return "📷 Imagem recebida. Arquivo não encontrado para análise.";
+            }
+
+            // Converte para base64 (mais confiável que URL temporária)
+            $base64 = base64_encode($conteudoImagem);
+            
+            // Detecta MIME type do caminho (img_xxx.jpg, img_xxx.png, etc)
+            $extensao = strtolower(pathinfo($imagemLocalPath, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp'
+            ];
+            $mediaType = $mimeMap[$extensao] ?? 'image/jpeg';
+
             $response = Http::withToken($this->openaiKey)
                 ->timeout(30)
                 ->post('https://api.openai.com/v1/chat/completions', [
@@ -373,7 +395,7 @@ class MediaProcessor
                                 [
                                     'type' => 'image_url',
                                     'image_url' => [
-                                        'url' => $imageUrl,
+                                        'url' => "data:{$mediaType};base64,{$base64}",
                                         'detail' => 'auto'
                                     ]
                                 ]

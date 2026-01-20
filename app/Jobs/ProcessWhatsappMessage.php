@@ -267,6 +267,10 @@ class ProcessWhatsappMessage implements ShouldQueue
             ->first();
 
         if (!$thread) {
+            // Obter assistente da empresa
+            $agenteGerado = \App\Models\AgenteGerado::where('empresa_id', $empresa->id)->first();
+            $assistentId = $agenteGerado?->assistant_id ?? null;
+            
             // Cria nova thread se não existir
             $threadResponse = Http::withToken(config('services.openai.key'))
                 ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
@@ -278,6 +282,7 @@ class ProcessWhatsappMessage implements ShouldQueue
                 'empresa_id' => $empresa->id,
                 'numero_cliente' => $clienteId,
                 'thread_id' => $threadId,
+                'assistente_id' => $assistentId,
                 'estado_atual' => 'STATE_START',
                 'estado_historico' => []
             ]);
@@ -285,6 +290,7 @@ class ProcessWhatsappMessage implements ShouldQueue
             Log::info('[THREAD] Criada nova thread para mídia', [
                 'cliente' => $clienteId,
                 'thread_id' => $threadId,
+                'assistente_id' => $assistentId,
             ]);
         }
 
