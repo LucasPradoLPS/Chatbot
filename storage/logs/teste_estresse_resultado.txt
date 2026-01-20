@@ -1,0 +1,12 @@
+﻿=== TESTE DE ESTRESSE DO CHATBOT ===
+Data/Hora: 01/19/2026 14:15:56
+Usuarios: 50
+Mensagens por usuario: 4
+Paralelizacao: 20
+
+
+
+=== RESULTADOS FINAIS ===
+Sucessos: 200
+Falhas: 0
+Taxa de sucesso: 100%

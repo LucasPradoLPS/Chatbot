@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
@@ -20,5 +19,6 @@ class Kernel extends ConsoleKernel
         require base_path('routes/console.php');
     }
 }
+
 
 

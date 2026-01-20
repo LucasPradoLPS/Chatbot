@@ -101,13 +101,11 @@ class WhatsappWebhookController extends Controller
             die(json_encode(['error' => 'Dados incompletos']));
         }
 
-        // Processamento: síncrono (imediato) para testes, ou assíncrono via fila.
-        if (config('app.queue_sync_webhook')) {
-            \Log::info('Webhook in sync mode; processing inline');
-            (new \App\Jobs\ProcessWhatsappMessage($data))->handle();
-        } else {
-            ProcessWhatsappMessage::dispatch($data)->onQueue('whatsapp');
-        }
+        // Processamento: sempre assíncrono para evitar timeout na API Gateway
+        // Mesmo em sync mode (QUEUE_CONNECTION=sync), o job será enfileirado e processado imediatamente em memória
+        // Mas isso permite que o webhook retorne rapidamente (202) sem bloquear no polling da IA
+        ProcessWhatsappMessage::dispatch($data)->onQueue('default');
+        
         // Immediate ack to Evolution API.
         http_response_code(202);
         header('Content-Type: application/json');

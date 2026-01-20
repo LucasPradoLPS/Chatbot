@@ -128,7 +128,7 @@ class StateMachine
      * Prompts para cada estado
      */
     public const STATE_PROMPTS = [
-        'STATE_START' => "SEMPRE comece com uma saudação educada e completa:\n\n\"Oi, bom dia! 👋\n\nSou o assistente virtual da Imobiliária California! 🏠\n\nEstou aqui para te ajudar a:\n🔍 Ver imóveis disponíveis\n📅 Agendar visitas\n💬 Falar com um corretor\n\nAntes de começar, preciso da sua autorização para usar seus dados. Posso continuar?\"\n\nSempre seja educado, use emojis apropriados e mostre as opções disponíveis logo na primeira mensagem. Próximo: perguntar sobre LGPD.",
+        'STATE_START' => "SEMPRE comece com uma saudação educada e completa:\n\n\"Oi, bom dia! 👋\n\nSou o assistente virtual da Imobiliária California! 🏠\n\nAntes de começar, preciso da sua autorização para usar seus dados. Posso continuar?\"\n\nSempre seja educado, use emojis apropriados. Próximo: perguntar sobre LGPD.",
 
         'STATE_LGPD' => "Pergunte de forma educada: \"Posso usar seus dados pessoais para te enviar opções personalizadas e em conformidade com a LGPD?\"\n\nOfereça claramente:\n1️⃣ Sim, pode usar meus dados\n2️⃣ Não, prefiro sem cadastro\n\nSe aceitar (opção 1): agradeça e vá para STATE_OBJETIVO\nSe recusar (opção 2): vá para STATE_SEM_CADASTRO (entregar informações gerais + botão Falar com corretor)",
 

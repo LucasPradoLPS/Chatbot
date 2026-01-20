@@ -14,7 +14,6 @@ Route::get('/', function () {
     }
 });
 
-// Compatibilidade: algumas configurações da Evolution usam caminhos sem o prefixo /api
-// Aceitar POSTs em /webhook e /webhook/messages-upsert pelo mesmo controller
 Route::post('/webhook', [WhatsappWebhookController::class, 'handle']);
 Route::post('/webhook/messages-upsert', [WhatsappWebhookController::class, 'handle']);
+

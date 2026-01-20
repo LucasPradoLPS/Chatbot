@@ -18,11 +18,16 @@ use App\Models\MensagensMemoria;
 use App\Models\IaIntervencao;
 use App\Models\Thread;
 use App\Services\IntentDetector;
+
+// Aumentar timeout para 10 minutos para requisições OpenAI com polling
+set_time_limit(600);
 use App\Services\SlotsSchema;
 use App\Services\StateMachine;
+use App\Services\ContextualResponseValidator;
 use App\Services\MatchingEngine;
 use App\Services\SimuladorFinanciamento;
 use App\Services\EventService;
+use App\Services\MediaProcessor;
 use App\Models\SuporteChamado;
 
 class ProcessWhatsappMessage implements ShouldQueue
@@ -51,6 +56,7 @@ class ProcessWhatsappMessage implements ShouldQueue
         $isGrupo = $remetente && str_ends_with($remetente, '@g.us');
         $source = $data['data']['source'] ?? null;
         $msgData = $data['data']['message'] ?? [];
+        $pushName = $data['data']['pushName'] ?? null; // Nome do contato no WhatsApp (se disponível)
 
         // Deduplicação rápida: evita processar o mesmo messageId duas vezes (ack/reentrega Evolution)
         if ($messageId) {
@@ -119,6 +125,53 @@ class ProcessWhatsappMessage implements ShouldQueue
             Log::warning('[BLOQUEADO] Instância N8n não existe no banco para: ' . $remetente);
             return;
         }
+
+        // ============ VERIFICAÇÃO DE HORÁRIO DE ATENDIMENTO ============
+        // Horário de atendimento: Segunda a Sexta-feira, 08h às 17h
+        $agora = now('America/Sao_Paulo'); // Usar timezone de São Paulo
+        $dia_semana = $agora->dayOfWeek; // 0=domingo, 1=segunda, ..., 6=sábado
+        $hora_atual = $agora->hour;
+
+        // Verificar se é fim de semana (domingo=0 ou sábado=6)
+        $eh_fim_semana = $dia_semana == 0 || $dia_semana == 6;
+        
+        // Verificar se está fora do horário (antes das 08h ou depois das 17h)
+        $fora_horario = $hora_atual < 8 || $hora_atual >= 17;
+
+        if ($eh_fim_semana || $fora_horario) {
+            Log::info('[FORA DE HORÁRIO] Mensagem recebida fora do atendimento', [
+                'numero_cliente' => $clienteId,
+                'dia_semana' => ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][$dia_semana],
+                'hora' => $hora_atual,
+                'eh_fim_semana' => $eh_fim_semana,
+                'fora_horario' => $fora_horario,
+            ]);
+
+            // Enviar mensagem de horário de atendimento
+            try {
+                $resposta_fora_horario = "⏰ Horário de Atendimento\n\nNosso horário de atendimento é:\n🕗 Segunda a sexta-feira, das 08h às 17h.\n\nFicaremos felizes em te atender dentro desse horário 😊";
+                
+                Http::withHeaders(['apikey' => config('services.evolution.key')])
+                    ->post(config('services.evolution.url') . "/instances/{$instance}/send", [
+                        'number' => $clienteId,
+                        'text' => $resposta_fora_horario,
+                        'jid' => $remetente,
+                    ]);
+                
+                Log::info('[FORA DE HORÁRIO] Resposta enviada ao cliente', [
+                    'numero_cliente' => $clienteId,
+                    'remetente' => $remetente,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('[FORA DE HORÁRIO] Erro ao enviar resposta', [
+                    'numero_cliente' => $clienteId,
+                    'erro' => $e->getMessage(),
+                ]);
+            }
+
+            return; // Não processar a mensagem
+        }
+        // ============================================================
 
         // Configuração de autoatendimento pelo próprio operador
         $allowSelfChat = (bool) config('app.allow_self_chat');
@@ -198,34 +251,45 @@ class ProcessWhatsappMessage implements ShouldQueue
             $tipoMensagem = 'video';
         }
 
-        // Bloquear tipos de mensagem não suportados
-        if ($tipoMensagem === 'video') {
-            Http::withHeaders(['apikey' => config('services.evolution.key')])
-                ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
-                    'number' => $remetente,
-                    'text' => 'Recebemos seu vídeo, mas ainda não conseguimos processar vídeos. 😊 Pode enviar por áudio ou texto?',
-                ]);
-            Log::info('Vídeo recebido; resposta padrão enviada.');
+        // Buscar empresa antes de processar mídia
+        $empresa = Empresa::find($instancia->empresa_id);
+        if (!$empresa) {
+            Log::warning('[ERRO] Empresa não encontrada', ['empresa_id' => $instancia->empresa_id]);
+            Log::warning('[BLOQUEADO] Empresa ID ' . $instancia->empresa_id . ' não existe para: ' . $remetente);
             return;
         }
 
-        if ($tipoMensagem === 'image') {
-            Http::withHeaders(['apikey' => config('services.evolution.key')])
-                ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
-                    'number' => $remetente,
-                    'text' => 'Recebemos sua imagem, mas não consigo visualizar ou interpretar imagens diretamente. 📷 Se puder descrever o que você precisa, ficarei feliz em ajudar!',
-                ]);
-            Log::info('Imagem recebida; resposta padrão enviada.');
-            return;
+        // Criar ou buscar thread para poder processar mídia
+        $thread = Thread::where('empresa_id', $empresa->id)
+            ->where('numero_cliente', $clienteId)
+            ->where('updated_at', '>=', now()->subHours(48))
+            ->first();
+
+        if (!$thread) {
+            // Cria nova thread se não existir
+            $threadResponse = Http::withToken(config('services.openai.key'))
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->post('https://api.openai.com/v1/threads', []);
+
+            $threadId = $threadResponse['id'] ?? null;
+
+            $thread = Thread::create([
+                'empresa_id' => $empresa->id,
+                'numero_cliente' => $clienteId,
+                'thread_id' => $threadId,
+                'estado_atual' => 'STATE_START',
+                'estado_historico' => []
+            ]);
+
+            Log::info('[THREAD] Criada nova thread para mídia', [
+                'cliente' => $clienteId,
+                'thread_id' => $threadId,
+            ]);
         }
 
-        if ($tipoMensagem === 'audio') {
-            Http::withHeaders(['apikey' => config('services.evolution.key')])
-                ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
-                    'number' => $remetente,
-                    'text' => 'Recebemos seu áudio, mas ainda não consigo processar áudio. 🎙️ Pode enviar em texto?',
-                ]);
-            Log::info('Áudio recebido; resposta padrão enviada.');
+        // Processar mídias com agente inteligente
+        if (in_array($tipoMensagem, ['image', 'audio', 'video', 'document'])) {
+            $this->processarMedia($tipoMensagem, $msgData, $instance, $remetente, $thread, $clienteId);
             return;
         }
 
@@ -252,13 +316,7 @@ class ProcessWhatsappMessage implements ShouldQueue
             return;
         }
 
-        $empresa = Empresa::find($instancia->empresa_id);
-        if (!$empresa) {
-            Log::warning('[ERRO] Empresa não encontrada', ['empresa_id' => $instancia->empresa_id]);
-            Log::warning('[BLOQUEADO] Empresa ID ' . $instancia->empresa_id . ' não existe para: ' . $remetente);
-            return;
-        }
-
+        // $empresa já foi buscada antes para processar mídia
         $agente = Agente::where('empresa_id', $empresa->id)->first();
 
         if (!$agente || !$agente->ia_ativa) {
@@ -420,6 +478,57 @@ class ProcessWhatsappMessage implements ShouldQueue
                 if (!$fromMe) {
                     $thread->update(['ultima_atividade_usuario' => now()]);
                 }
+
+                // ⭐ DETECÇÃO DE REINÍCIO: Se a mensagem começar com saudação, volta para o menu inicial
+                $msgLowerReinicio = strtolower(trim($mensagem));
+                $ehSaudacao = preg_match('/^(oi|olá|ola|hey|opa|e aí|e ai|tudo bem|bom dia|boa tarde|boa noite|alô|alá|oie|oii)/i', $msgLowerReinicio);
+                
+                if ($ehSaudacao) {
+                    // Resetar para o menu inicial
+                    $thread->update([
+                        'etapa_fluxo' => 'boas_vindas',
+                        'objetivo' => null,
+                        'slots' => [],
+                        'intent' => 'indefinido',
+                        'estado_atual' => 'STATE_START',
+                    ]);
+                    $thread->refresh();
+                    
+                    // RESPONDER DIRETO COM O MENU (sem chamar OpenAI)
+                    $nomeCliente = $pushName ? trim($pushName) : "Visitante";
+                    $saudacao = $thread->saudacao_inicial ?? 'Olá';
+                    $respostaMenu = "{$saudacao}! {$nomeCliente} 👋 Como posso te ajudar?\n\n" .
+                        "1️⃣ Comprar imóvel\n" .
+                        "2️⃣ Alugar imóvel\n" .
+                        "3️⃣ Documentos\n" .
+                        "4️⃣ Opções de pagamento\n" .
+                        "5️⃣ Pagamentos\n" .
+                        "6️⃣ Nota fiscal\n" .
+                        "7️⃣ Falar com corretor\n" .
+                        "8️⃣ Encerrar\n\n" .
+                        "Digite o número da opção desejada (1-8).";
+                    
+                    Log::info('[MENU] Saudação detectada, respondendo com menu direto', [
+                        'numero_cliente' => $clienteId,
+                        'mensagem' => $mensagem,
+                        'msg_lower' => $msgLowerReinicio,
+                    ]);
+                    
+                    // Enviar resposta e retornar (não processar mais nada)
+                    try {
+                        Http::withHeaders(['apikey' => config('services.evolution.key')])
+                            ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
+                                'number' => $clienteId,
+                                'text' => $respostaMenu,
+                            ]);
+                        Log::info('[MENU] Resposta enviada com sucesso', ['numero_cliente' => $clienteId]);
+                    } catch (\Exception $e) {
+                        Log::warning('[MENU] Erro ao enviar resposta', ['erro' => $e->getMessage()]);
+                    }
+                    return; // NÃO continuar processando
+                }
+
+
             }
 
             $slotsAtuais = $thread?->slots ?? [];
@@ -439,7 +548,6 @@ class ProcessWhatsappMessage implements ShouldQueue
                 $thread->ultimo_contato = now();
                 $thread->lgpd_consentimento_data = $thread->lgpd_consentimento ? now() : null;
                 $thread->save();
-
                 // Registrar evento: lead criado
                 EventService::leadCreated($empresa->id, $clienteId, [
                     'objetivo' => $objetivo,
@@ -489,10 +597,71 @@ class ProcessWhatsappMessage implements ShouldQueue
                 Log::info('[CRM] Status atualizado para qualificado', ['numero_cliente' => $clienteId]);
             }
 
+            // Validação Contextual: Verificar se resposta é válida para o estado atual
+            $validacaoContextual = ContextualResponseValidator::validate($estadoAtual, $mensagem);
+            
+            if ($validacaoContextual['is_valid'] === false && in_array($estadoAtual, ['STATE_OBJETIVO', 'STATE_Q2_TIPO', 'STATE_Q3_QUARTOS', 'STATE_LGPD', 'STATE_PROPOSTA'])) {
+                Log::warning('[VALIDACAO] Resposta inválida para estado', [
+                    'numero_cliente' => $clienteId,
+                    'estado' => $estadoAtual,
+                    'resposta' => $mensagem,
+                    'motivo' => $validacaoContextual['motivo'],
+                    'opcoes_esperadas' => $validacaoContextual['opcoes_esperadas'] ?? [],
+                ]);
+                
+                $opcoesDirecoes = ContextualResponseValidator::getValidOptionsForState($estadoAtual);
+                $descricaoEsperada = ContextualResponseValidator::getExpectedAnswerDescription($estadoAtual);
+                
+                $respostaValidacao = match($estadoAtual) {
+                    'STATE_OBJETIVO' => "Entendi, mas preciso que você escolha uma das opções:\n\n1️⃣ *Comprar* imóvel\n2️⃣ *Alugar* imóvel\n3️⃣ *Vender* meu imóvel\n4️⃣ *Anunciar* para aluguel\n5️⃣ *Investimento*\n6️⃣ *Suporte* (já sou cliente)\n7️⃣ *Falar com corretor*\n\nQual é sua intenção? 😊",
+                    'STATE_Q2_TIPO' => "Desculpe, preciso que você escolha o tipo de imóvel:\n\n- Apartamento 🏢\n- Casa 🏠\n- Comercial 🏪\n- Terreno 🌳\n- Kitnet 🏘️\n\nQual é o tipo?",
+                    'STATE_Q3_QUARTOS' => "Entendi! Poderia informar quantos quartos?\n\nExemplos: \"2 quartos\", \"3q\", \"1 quarto\"",
+                    'STATE_LGPD' => "Preciso que você confirme: Você aceita nossa política de privacidade?\n\nResponda: *Sim* ou *Não*",
+                    'STATE_PROPOSTA' => "Qual forma de pagamento você prefere?\n\n- À vista 💰\n- Financiamento 🏦\n- Parcelado 📅\n- Consórcio 📝\n- FGTS 📋\n- Permuta 🔄\n- Misto 🔀",
+                    default => "Desculpe, não entendi. Poderia tentar novamente?\n\nEsperado: $descricaoEsperada"
+                };
+                
+                $respostLimpa = $respostaValidacao;
+                
+                // Registrar tentativa de resposta inválida
+                if (!isset($thread->fallback_tentativas)) {
+                    $thread->fallback_tentativas = 0;
+                }
+                $thread->fallback_tentativas++;
+                $thread->save();
+                
+                // Se 3+ tentativas, oferecer handoff
+                if ($thread->fallback_tentativas >= 3) {
+                    $respostLimpa .= "\n\n📞 Parece que há alguma dificuldade. Deseja *falar com um corretor*?";
+                }
+                
+                Log::info('[VALIDACAO] Resposta de validação enviada', [
+                    'numero_cliente' => $clienteId,
+                    'estado' => $estadoAtual,
+                ]);
+                
+                // Usar a resposta de validação como resposta final e prosseguir para envio
+                $respostaLimpa = $respostLimpa;
+                $respostaBruta = $respostLimpa;
+            }
+
+            // Se passou na validação, atualizar slots se há correspondência
+            if ($validacaoContextual['is_valid'] === true && isset($validacaoContextual['slot'])) {
+                $slotsAtuais = ContextualResponseValidator::updateSlotsFromValidation($slotsAtuais, $validacaoContextual);
+                $thread->slots = json_encode($slotsAtuais, JSON_UNESCAPED_UNICODE);
+                $thread->save();
+                Log::info('[SLOTS] Atualizados por validação contextual', [
+                    'numero_cliente' => $clienteId,
+                    'slot' => $validacaoContextual['slot'],
+                    'valor' => $validacaoContextual['valor_slot'],
+                ]);
+            }
+
             // Detectar e validar próximo estado
             $proximoEstado = StateMachine::detectNextState($estadoAtual, $intentAtual, $objetivo);
             if ($proximoEstado && StateMachine::isValidTransition($estadoAtual, $proximoEstado)) {
                 // Registrar transição
+
                 $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAtual, $proximoEstado);
                 $thread->estado_atual = $proximoEstado;
                 $thread->estado_historico = $estadoHistorico;
@@ -542,7 +711,7 @@ class ProcessWhatsappMessage implements ShouldQueue
             $textoMensagemAtual = $mensagem ?? '[imagem recebida]';
 
             $textoSlots = 'Slots atuais (JSON): ' . json_encode($slotsAtuais, JSON_UNESCAPED_UNICODE);
-            $regrasSlots = "Regras de coleta com slots:\n- Pergunte apenas uma coisa por vez e espere a resposta.\n- Seja consultivo: ofereça 3 a 8 opções iniciais (curtas) e refine com novas perguntas conforme as respostas, sempre atualizando slots.\n- Atualize e devolva sempre o estado COMPLETO dos slots em JSON no bloco [[SLOTS]]{...}[[/SLOTS]].\n- Se um slot ainda não foi respondido, mantenha-o com valor null.\n- Slots obrigatórios (nunca deixe null): nome, telefone_whatsapp, cidade, preferencia_contato.\n- Slots opcionais podem permanecer null: email, banheiros, metragem_min, condominio_max, fotos_link.\n- Só faça uma nova pergunta se ainda houver slot vazio E relevante para o objetivo.\n- Se todos os slots OBRIGATÓRIOS estiverem preenchidos, confirme o resumo.\n- SEMPRE encerre cada etapa com um próximo passo CLARO e explícito.\n- Em TODA resposta, finalize oferecendo os atalhos: Ver imóveis | Agendar visita | Falar com corretor.";
+            $regrasSlots = "Regras de coleta com slots:\n- Pergunte apenas uma coisa por vez e espere a resposta.\n- Seja consultivo: ofereça 3 a 8 opções iniciais (curtas) e refine com novas perguntas conforme as respostas, sempre atualizando slots.\n- Atualize e devolva sempre o estado COMPLETO dos slots em JSON no bloco [[SLOTS]]{...}[[/SLOTS]].\n- Se um slot ainda não foi respondido, mantenha-o com valor null.\n- Slots obrigatórios (nunca deixe null): nome, telefone_whatsapp, cidade, preferencia_contato.\n- Slots opcionais podem permanecer null: email, banheiros, metragem_min, condominio_max, fotos_link.\n- Só faça uma nova pergunta se ainda houver slot vazio E relevante para o objetivo.\n- Se todos os slots OBRIGATÓRIOS estiverem preenchidos, confirme o resumo.\n- SEMPRE encerre cada etapa com um próximo passo CLARO e explícito.";
 
             // Descrição da intenção detectada
             $descricaoIntent = IntentDetector::describe($intentAtual);
@@ -553,13 +722,24 @@ class ProcessWhatsappMessage implements ShouldQueue
             $descricaoEstado = StateMachine::describe($estadoAtual);
             $textoEstado = "Estado atual: $estadoAtual ($descricaoEstado).\nInstruções para este estado:\n$promptEstado\n\n";
 
+            // RE-LER etapa do fluxo do banco (pode ter sido atualizada pelas transições acima)
+            $thread->refresh();
+            $etapaFluxo = $thread->etapa_fluxo ?? 'boas_vindas';
+
             // Instruções por etapa do fluxo
             $saudacaoInicial = $thread->saudacao_inicial ?? 'Olá';
             $instrucoesFluxo = match($etapaFluxo) {
-                'boas_vindas' => "ETAPA: Boas-vindas e apresentação.\nUse a mensagem pronta (tom profissional), substituindo [Imobiliária] por {$empresa->nome}:\n\n" .
-                    "{$saudacaoInicial}! Eu sou o assistente da [Imobiliária]. Posso te ajudar a comprar, alugar ou anunciar um imóvel. Como prefere começar?\n" .
-                    "\nIMPORTANTE: Se o cliente enviou apenas '{$saudacaoInicial}' ou saudação similar como primeira mensagem, você DEVE responder com '{$saudacaoInicial}!' no início da sua mensagem.\n" .
-                    "\nAntes de continuar, você PRECISA explicar brevemente sobre proteção de dados (LGPD) e pedir consentimento.\nPróximo: mover para etapa 'lgpd'.",
+                'boas_vindas' => "ETAPA: Menu principal.\nResponda EXATAMENTE com este menu, sem adicionar explicações extras:\n\n" .
+                    "{$saudacaoInicial}! " . ($pushName ? trim($pushName) : "Visitante") . " 👋 Como posso te ajudar?\n\n" .
+                    "1️⃣ Comprar imóvel\n" .
+                    "2️⃣ Alugar imóvel\n" .
+                    "3️⃣ Documentos\n" .
+                    "4️⃣ Opções de pagamento\n" .
+                    "5️⃣ Pagamentos\n" .
+                    "6️⃣ Nota fiscal\n" .
+                    "7️⃣ Falar com corretor\n" .
+                    "8️⃣ Encerrar\n\n" .
+                    "Digite o número da opção desejada (1-8).",
                 'lgpd' => "ETAPA: Consentimento LGPD.\nSua tarefa: pergunte ao usuário se ele consente em compartilhar dados pessoais para melhor atendimento e em conformidade com a LGPD.\nAceite: 'sim', 'concordo', 'aceito', 'claro', etc.\nDepois de confirmado, mover para etapa 'objetivo'.\nPróximo: identificar objetivo.",
                 'objetivo' => "ETAPA: Identificar objetivo do usuário.\nOfereça exatamente estas 6 opções de forma clara:\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\nEspere o usuário escolher uma opção.\nDepois de selecionado, capturar objetivo e mover para etapa 'qualificacao'.",
                 'qualificacao' => "ETAPA: Qualificação (dados do lead + preferências).\nColeta DADOS DO LEAD (obrigatórios): nome, telefone_whatsapp, cidade, preferencia_contato, melhor_horario_contato.\nDepois colete dados específicos conforme objetivo:\n- Se COMPRA/ALUGUEL: tipo_imovel, finalidade, bairro_regiao, faixa_valor_min/max, quartos, vagas, prazo_mudanca, entrada_disponivel, aprovacao_credito, etc.\n- Se CAPTAÇÃO: endereco_imovel, tipo_imovel, quartos, area_total, estado_imovel, urgencia_venda_locacao, preco_desejado, fotos_link, etc.\nSeja consultivo: ofereça 3-8 opções e refine conforme respostas.\n\nMensagem pronta de filtro (use agora para direcionar a coleta):\n" .
@@ -577,7 +757,7 @@ class ProcessWhatsappMessage implements ShouldQueue
                 default => "ETAPA desconhecida. Retorne à etapa 'boas_vindas'.",
             };
 
-            $textoContextoFluxo = "Marca: {$empresa->nome}\nEstado do fluxo: etapa=$etapaFluxo, objetivo=$objetivo, lgpd_consentido=" . ($lgpdConsentimento ? 'sim' : 'não') . ".\n\n" . $instrucoesFluxo . "\n\n";
+            $textoContextoFluxo = "Marca: {$empresa->nome}\nNome do cliente: " . ($pushName ? trim($pushName) : 'não informado') . "\nEstado do fluxo: etapa=$etapaFluxo, objetivo=$objetivo, lgpd_consentido=" . ($lgpdConsentimento ? 'sim' : 'não') . ".\n\n" . $instrucoesFluxo . "\n\n";
 
             $conteudoAtual = [
                 ['type' => 'text', 'text' => $textoContextoFluxo . $textoEstado . $textoIntent . $textoContexto . $textoSlots . "\n\n" . $regrasSlots . "\n\nMensagem do cliente: " . $textoMensagemAtual]
@@ -590,27 +770,64 @@ class ProcessWhatsappMessage implements ShouldQueue
                     'content' => $conteudoAtual,
                 ]);
 
-            $runResponse = Http::withToken(config('services.openai.key'))
+            $runResponseObj = Http::withToken(config('services.openai.key'))
                 ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
                 ->post("https://api.openai.com/v1/threads/{$threadId}/runs", [
                     'assistant_id' => $assistantId,
                 ]);
 
+            $runResponse = $runResponseObj->json();
             $runId = $runResponse['id'] ?? null;
+            
+            // Verificar se criação da run falhou
+            if (!$runId) {
+                Log::error('Falha ao criar run na OpenAI', [
+                    'http_status' => $runResponseObj->status(),
+                    'response' => $runResponse,
+                    'assistant_id' => $assistantId,
+                    'thread_id' => $threadId,
+                ]);
+                throw new \RuntimeException('Falha ao criar run: ' . ($runResponse['message'] ?? 'resposta vazia'));
+            }
+            
+            Log::info('Run criada com sucesso', [
+                'run_id' => $runId,
+                'assistant_id' => $assistantId,
+            ]);
 
-            // Polling otimizado: aguarda conclusão da IA com timeout reduzido
+            // Polling otimizado: aguarda conclusão da IA com timeout aumentado
             $tentativas = 0;
-            $maxTentativas = 30; // máximo 30 segundos (aumentar limite de PHP para 120s antes se necessário)
+            $maxTentativas = 120; // máximo 120 segundos para aguardar resposta da OpenAI
             $tentativasFailed = 0;
-            $maxTentativasFailed = 3; // Máximo de falhas de conexão antes de desistir
+            $maxTentativasFailed = 5; // Máximo de falhas de conexão antes de desistir
             do {
                 usleep(1000000); // 1 segundo entre checks
                 try {
-                    $status = Http::timeout(10)->withToken(config('services.openai.key'))
+                    $apiKey = config('services.openai.key');
+                    $endpointUrl = "https://api.openai.com/v1/threads/{$threadId}/runs/{$runId}";
+                    
+                    $statusResponse = Http::timeout(30)->withToken($apiKey)
                         ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-                        ->get("https://api.openai.com/v1/threads/{$threadId}/runs/{$runId}");
+                        ->get($endpointUrl);
+                    
+                    // Ensure status is an array
+                    $statusArray = $statusResponse->json();
+                    $status = is_array($statusArray) ? $statusArray : (array) $statusArray;
                     $tentativas++;
                     $tentativasFailed = 0;
+                    
+                    $statusValue = $status['status'] ?? 'unknown';
+                    
+                    // Log detalhado nas primeiras tentativas para debug
+                    if ($tentativas <= 3) {
+                        Log::debug('Status da IA na tentativa ' . $tentativas, [
+                            'status' => $statusValue,
+                            'http_status' => $statusResponse->status(),
+                            'url' => $endpointUrl,
+                            'api_key_prefix' => substr($apiKey, 0, 20) . '...',
+                            'response_keys' => array_keys($status),
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     $tentativasFailed++;
                     Log::warning('Erro ao verificar status da IA', ['erro' => $e->getMessage(), 'tentativa' => $tentativasFailed]);
@@ -626,9 +843,13 @@ class ProcessWhatsappMessage implements ShouldQueue
                 throw new \RuntimeException('Timeout na resposta da IA (aguardou ' . $maxTentativas . 's)');
             }
 
-            $messages = Http::withToken(config('services.openai.key'))
+            $messagesResponse = Http::withToken(config('services.openai.key'))
                 ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
                 ->get("https://api.openai.com/v1/threads/{$threadId}/messages");
+            
+            // Ensure messages is an array
+            $messagesArray = $messagesResponse->json();
+            $messages = is_array($messagesArray) ? $messagesArray : (array) $messagesArray;
 
             $respostaBruta = $messages['data'][0]['content'][0]['text']['value'] ?? 'Desculpe, não consegui responder.';
 
@@ -1081,133 +1302,59 @@ class ProcessWhatsappMessage implements ShouldQueue
                 }
             }
 
-            // Detectar transições de fluxo na resposta do assistant
-            if (strpos($respostaLimpa, 'etapa LGPD') !== false || strpos($respostaLimpa, 'LGPD') !== false) {
-                // Mover explicitamente para etapa/state de LGPD
-                $thread->etapa_fluxo = 'lgpd';
-                $estadoHistorico = $thread->estado_historico ?? [];
-                $estadoAnterior = $estadoAtual;
-                $thread->estado_atual = 'STATE_LGPD';
-                $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAnterior, 'STATE_LGPD');
-                $thread->estado_historico = $estadoHistorico;
-                $thread->save();
-                $estadoAtual = 'STATE_LGPD';
-            } elseif (strpos($respostaLimpa, 'objetivo') !== false && strpos($respostaLimpa, '1️⃣') !== false) {
-                $thread->etapa_fluxo = 'objetivo';
-                $thread->save();
-            } elseif ($etapaFluxo === 'lgpd') {
+            // Fluxo simplificado: menu principal direto
+            // Interpreta escolhas numéricas do menu
+            if ($etapaFluxo === 'boas_vindas') {
                 $msgLower = strtolower(trim($mensagem));
                 $onlyDigits = preg_replace('/\D/', '', $msgLower);
 
-                $aceita = (
-                    preg_match('/(concordo|aceito|sim|claro|pode|autorizo|ok)/i', $msgLower) ||
-                    $onlyDigits === '1'
-                );
-                $nega = (
-                    preg_match('/(nao|não|prefiro|sem cadastro|recuso|neg|n\s*ao)/i', $msgLower) ||
-                    $onlyDigits === '2'
-                );
+                $menuMap = [
+                    '1' => 'comprar_imovel',
+                    '2' => 'alugar_imovel',
+                    '3' => 'documentos',
+                    '4' => 'opcoes_pagamento',
+                    '5' => 'pagamentos',
+                    '6' => 'nota_fiscal',
+                    '7' => 'falar_com_corretor',
+                    '8' => 'encerrar',
+                ];
 
-                if ($aceita) {
-                    $thread->lgpd_consentimento = true;
-                    $thread->lgpd_consentimento_data = now();
-                    $thread->lgpd_politica_versao = '1.0'; // versão da política atual
-                    $thread->etapa_fluxo = 'objetivo';
-                    // Atualiza estado para objetivos
-                    $estadoHistorico = $thread->estado_historico ?? [];
-                    $estadoAnterior = $estadoAtual;
-                    $thread->estado_atual = 'STATE_OBJETIVO';
-                    $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAnterior, 'STATE_OBJETIVO');
-                    $thread->estado_historico = $estadoHistorico;
-                    $thread->save();
-                    $estadoAtual = 'STATE_OBJETIVO';
-                    // Apresentar menu de objetivos imediatamente após consentimento
-                    $respostaLimpa = "Perfeito! Vamos avançar.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6).";
-                    Log::info('[LGPD] Consentimento registrado', ['numero_cliente' => $clienteId]);
-                } elseif ($nega) {
-                    $thread->lgpd_consentimento = false;
-                    $thread->lgpd_consentimento_data = now();
-                    $thread->lgpd_politica_versao = '1.0';
-                    // Mesmo sem consentimento, seguir para objetivos com experiência limitada
-                    $thread->etapa_fluxo = 'objetivo';
-                    $estadoHistorico = $thread->estado_historico ?? [];
-                    $estadoAnterior = $estadoAtual;
-                    $thread->estado_atual = 'STATE_OBJETIVO';
-                    $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAnterior, 'STATE_OBJETIVO');
-                    $thread->estado_historico = $estadoHistorico;
-                    $thread->save();
-                    $estadoAtual = 'STATE_OBJETIVO';
-                    // Apresentar menu de objetivos com aviso de experiência limitada
-                    $respostaLimpa = "Tudo bem, seguiremos sem cadastro. Algumas opções podem ficar limitadas.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6).";
-                    Log::info('[LGPD] Consentimento negado; seguindo com experiência limitada', ['numero_cliente' => $clienteId]);
-                }
-            } elseif ($estadoAtual === 'STATE_START') {
-                // Se o usuário responder imediatamente com "1" ou frases de aceite/negação,
-                // interprete como resposta ao consentimento LGPD mesmo estando em START.
-                $msgLower = strtolower(trim($mensagem));
-                $onlyDigits = preg_replace('/\D/', '', $msgLower);
+                if (isset($menuMap[$onlyDigits])) {
+                    $escolha = $menuMap[$onlyDigits];
+                    Log::info('[MENU] Opção escolhida', [
+                        'numero_cliente' => $clienteId,
+                        'opcao' => $onlyDigits,
+                        'descricao' => $escolha,
+                    ]);
 
-                $aceita = (
-                    preg_match('/(concordo|aceito|sim|claro|pode|autorizo|ok)/i', $msgLower) ||
-                    $onlyDigits === '1'
-                );
-                $nega = (
-                    preg_match('/(nao|não|prefiro|sem cadastro|recuso|neg|n\s*ao)/i', $msgLower) ||
-                    $onlyDigits === '2'
-                );
+                    // Rotear para a opção escolhida
+                    if ($escolha === 'comprar_imovel') {
+                        $thread->etapa_fluxo = 'qualificacao';
+                        $thread->objetivo = 'comprar';
+                        $respostaLimpa = "Perfeito! Vamos buscar o imóvel ideal para você.\n\nQual tipo de imóvel você procura? (apartamento, casa, kitnet, etc)";
+                    } elseif ($escolha === 'alugar_imovel') {
+                        $thread->etapa_fluxo = 'qualificacao';
+                        $thread->objetivo = 'alugar';
+                        $respostaLimpa = "Ótimo! Vou te ajudar a encontrar um bom imóvel para aluguel.\n\nQual tipo de imóvel você procura? (apartamento, casa, kitnet, etc)";
+                    } elseif ($escolha === 'documentos') {
+                        $respostaLimpa = "📄 *DOCUMENTOS NECESSÁRIOS*\n\n✅ *Para comprar:*\n- RG e CPF\n- Comprovante de renda\n- Extrato bancário\n- Aprovação em crédito (se financiamento)\n\n✅ *Para alugar:*\n- RG e CPF\n- Comprovante de renda\n- Referências pessoais\n- Antecedentes (se solicitado)\n\nPrecisa de mais informações? Digite uma opção: 1️⃣ Comprar | 2️⃣ Alugar | 3️⃣ Outro";
+                    } elseif ($escolha === 'opcoes_pagamento') {
+                        $respostaLimpa = "💳 *OPÇÕES DE PAGAMENTO*\n\n💰 *À vista:* Desconto imediato\n🏦 *Financiamento:* Até 360 meses\n🏛️ *FGTS:* Se elegível\n📊 *Parcelado:* Condições especiais\n\nQuer simular um financiamento? Digite 1️⃣ Sim | 2️⃣ Não | 3️⃣ Voltar ao menu";
+                    } elseif ($escolha === 'pagamentos') {
+                        $respostaLimpa = "💸 *GERENCIAR PAGAMENTOS*\n\n🔍 Consultar:\n- Status do pagamento\n- Histórico de transações\n- Extrato de faturas\n- Boletos em aberto\n\n📞 Precisa de ajuda? Digite uma opção:\n1️⃣ Consultar pagamento | 2️⃣ Pedir recibo | 3️⃣ Voltar ao menu";
+                    } elseif ($escolha === 'nota_fiscal') {
+                        $respostaLimpa = "📋 *NOTA FISCAL*\n\nA nota fiscal será emitida automaticamente após a conclusão da transação.\n\n📄 Informações necessárias:\n- Dados pessoais\n- CPF ou CNPJ\n- Dados bancários (para transferência)\n\nDeseja voltar ao menu? 1️⃣ Sim | 2️⃣ Falar com corretor";
+                    } elseif ($escolha === 'falar_com_corretor') {
+                        $thread->etapa_fluxo = 'handoff';
+                        $respostaLimpa = "👨‍💼 Vou te conectar a um corretor agora.\n\nPor favor, aguarde um momento...";
+                    } elseif ($escolha === 'encerrar') {
+                        $respostaLimpa = "👋 Obrigado por usar nosso serviço!\n\nFicamos felizes em poder ajudar. Até logo! 😊\n\nSe precisar de ajuda novamente, é só chamar. Volte sempre!";
+                    }
 
-                if ($aceita || $nega) {
-                    $thread->lgpd_consentimento = $aceita;
-                    $thread->lgpd_consentimento_data = now();
-                    $thread->lgpd_politica_versao = '1.0';
-                    $thread->etapa_fluxo = 'objetivo';
-                    // Transiciona de START direto para OBJETIVO
-                    $estadoHistorico = $thread->estado_historico ?? [];
-                    $estadoAnterior = $estadoAtual;
-                    $thread->estado_atual = 'STATE_OBJETIVO';
-                    $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAnterior, 'STATE_OBJETIVO');
-                    $thread->estado_historico = $estadoHistorico;
                     $thread->save();
-                    $estadoAtual = 'STATE_OBJETIVO';
-                    // Apresentar menu após resposta direta no START
-                    $respostaLimpa = $aceita
-                        ? "Perfeito! Vamos avançar.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6)."
-                        : "Tudo bem, seguiremos sem cadastro. Algumas opções podem ficar limitadas.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6).";
-                    Log::info($aceita ? '[LGPD] Consentimento registrado (START)' : '[LGPD] Consentimento negado (START)', ['numero_cliente' => $clienteId]);
                 }
             } elseif ($estadoAtual === 'STATE_HANDOFF') {
-                // Permitir recuperação do fluxo caso o usuário responda '1' ou '2' (consentimento) mesmo após cair em HANDOFF
-                $msgLower = strtolower(trim($mensagem));
-                $onlyDigits = preg_replace('/\D/', '', $msgLower);
-
-                $aceita = (
-                    preg_match('/(concordo|aceito|sim|claro|pode|autorizo|ok)/i', $msgLower) ||
-                    $onlyDigits === '1'
-                );
-                $nega = (
-                    preg_match('/(nao|não|prefiro|sem cadastro|recuso|neg|n\s*ao)/i', $msgLower) ||
-                    $onlyDigits === '2'
-                );
-
-                if ($aceita || $nega) {
-                    $thread->lgpd_consentimento = $aceita;
-                    $thread->lgpd_consentimento_data = now();
-                    $thread->lgpd_politica_versao = '1.0';
-                    $thread->etapa_fluxo = 'objetivo';
-                    // Sair de HANDOFF e voltar para objetivos
-                    $estadoHistorico = $thread->estado_historico ?? [];
-                    $estadoAnterior = $estadoAtual;
-                    $thread->estado_atual = 'STATE_OBJETIVO';
-                    $estadoHistorico = StateMachine::registerTransition($estadoHistorico, $estadoAnterior, 'STATE_OBJETIVO');
-                    $thread->estado_historico = $estadoHistorico;
-                    $thread->save();
-                    $estadoAtual = 'STATE_OBJETIVO';
-                    // Menu de objetivos
-                    $respostaLimpa = $aceita
-                        ? "Perfeito! Vamos avançar.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6)."
-                        : "Tudo bem, seguiremos sem cadastro. Algumas opções podem ficar limitadas.\n\n1️⃣ Comprar imóvel\n2️⃣ Alugar imóvel\n3️⃣ Vender imóvel\n4️⃣ Anunciar para aluguel (proprietário)\n5️⃣ Investimento imobiliário\n6️⃣ Falar com corretor (atendimento humano)\n\nEscolha uma opção (1-6).";
-                    Log::info('[HANDOFF->OBJETIVO] Recuperado por resposta de consentimento', ['numero_cliente' => $clienteId]);
-                }
+                // Recuperar para o menu se o usuário voltar
             } elseif ($intentAtual === 'comprar_imovel') {
                 $thread->objetivo = 'comprar';
                 $thread->etapa_fluxo = 'qualificacao';
@@ -1316,10 +1463,6 @@ class ProcessWhatsappMessage implements ShouldQueue
                 Log::info('[HANDOFF] Queixa/ameaça jurídica, handoff', ['numero_cliente' => $clienteId]);
             } elseif ($intentAtual === 'negativa_sair') {
                 Log::info('[INTENT-SAIR] Usuário saindo', ['numero_cliente' => $clienteId]);
-            } elseif ($etapaFluxo === 'qualificacao' && !empty(array_filter($slotsExtraidos ?? []))) {
-                $thread->etapa_fluxo = 'catalogo';
-                $thread->save();
-                Log::info('[QUALIFICACAO] Completa, movendo para catálogo', ['numero_cliente' => $clienteId]);
             } elseif (preg_match('/(agendar|visita|horário|data)/i', $mensagem) && $etapaFluxo === 'catalogo') {
                 $thread->etapa_fluxo = 'agendamento';
                 $thread->save();
@@ -1358,8 +1501,8 @@ class ProcessWhatsappMessage implements ShouldQueue
             // Remover tags de slots (apenas para log interno, não enviadas ao usuário)
             $respostaBrutaLimpa = preg_replace('/\[\[SLOTS\]\].*?\[\[\/SLOTS\]\]/s', '', $respostaBruta ?? '');
 
-            $atalhosPadrao = 'Atalhos: Ver imóveis | Agendar visita | Falar com corretor';
-            $respostaParaEnvio = trim($respostaLimpa . "\n\n" . $atalhosPadrao);
+            $atalhosPadrao = '';
+            $respostaParaEnvio = trim($respostaLimpa);
 
             Log::info('Resposta final da IA (job):', [
                 'resposta_limpa' => $respostaLimpa,
@@ -1716,5 +1859,142 @@ class ProcessWhatsappMessage implements ShouldQueue
                 'tags' => ['suíte', 'piscina', 'pet_friendly'],
             ],
         ];
+    }
+
+    /**
+     * Processa arquivos de mídia (imagens, PDFs, áudio, vídeo)
+     * Usa MediaProcessor para análise inteligente e integra resultado no fluxo conversacional
+     */
+    private function processarMedia(string $tipoMensagem, array $msgData, string $instance, string $remetente, Thread $thread, string $clienteId)
+    {
+        try {
+            $mediaProcessor = new MediaProcessor();
+            
+            // Processa o arquivo baseado no tipo
+            if ($tipoMensagem === 'video') {
+                // Vídeo não é suportado por hora
+                $resposta = '🎥 Recebemos seu vídeo! Ainda estou aprendendo a processar vídeos. Pode descrever o conteúdo em texto ou enviar como imagem/PDF? Sua paciência é valorizada! 😊';
+                
+                Log::info('Vídeo recebido; resposta enviada', [
+                    'cliente' => $clienteId,
+                    'thread_id' => $thread->id
+                ]);
+            } else {
+                // Processa imagem, documento ou áudio
+                $resultado = $mediaProcessor->processar($msgData);
+                
+                if ($resultado['success'] === false) {
+                    $resposta = "❌ Desculpe, não consegui processar o arquivo: " . ($resultado['erro'] ?? 'Erro desconhecido');
+                    Log::warning('Erro ao processar mídia', [
+                        'tipo' => $tipoMensagem,
+                        'cliente' => $clienteId,
+                        'erro' => $resultado['erro'] ?? 'Unknown'
+                    ]);
+                } else {
+                    // Sucesso! Integra conteúdo extraído no contexto da conversa
+                    $conteudo = $resultado['conteudo_extraido'] ?? '';
+                    $tipoMidia = $resultado['tipo_midia'] ?? $tipoMensagem;
+                    
+                    // Monta resposta contextualizada
+                    $resposta = $this->montarRespostaMedia($tipoMidia, $conteudo, $thread);
+                    
+                    // Armazena informação da mídia no histórico do thread
+                    if ($thread->estado_historico === null) {
+                        $thread->estado_historico = [];
+                    }
+                    
+                    $historico = is_array($thread->estado_historico) ? $thread->estado_historico : [];
+                    $historico[] = [
+                        'timestamp' => now()->toIso8601String(),
+                        'tipo' => 'midia_processada',
+                        'tipo_midia' => $tipoMidia,
+                        'arquivo_local' => $resultado['arquivo_local'] ?? null,
+                        'conteudo_chars' => strlen($conteudo),
+                        'metadados' => $resultado['metadados'] ?? []
+                    ];
+                    
+                    $thread->update(['estado_historico' => $historico]);
+                    
+                    Log::info('Mídia processada com sucesso', [
+                        'tipo' => $tipoMidia,
+                        'cliente' => $clienteId,
+                        'thread_id' => $thread->id,
+                        'arquivo' => $resultado['arquivo_local'] ?? null
+                    ]);
+                }
+            }
+            
+            // Envia resposta via Evolution/WhatsApp
+            $response = Http::withHeaders(['apikey' => config('services.evolution.key')])
+                ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
+                    'number' => $remetente,
+                    'text' => $resposta,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('Falha ao enviar resposta de mídia via Evolution', [
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                    'cliente' => $clienteId
+                ]);
+            }
+
+        } catch (Exception $e) {
+            Log::error('Erro ao processar mídia no job', [
+                'tipo' => $tipoMensagem,
+                'erro' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Envia resposta de erro genérica
+            Http::withHeaders(['apikey' => config('services.evolution.key')])
+                ->post(config('services.evolution.url') . "/message/sendText/{$instance}", [
+                    'number' => $remetente,
+                    'text' => '⚠️ Desculpe, ocorreu um erro ao processar seu arquivo. Por favor, tente novamente mais tarde.',
+                ]);
+        }
+    }
+
+    /**
+     * Monta resposta contextualizada baseada no tipo de mídia e seu conteúdo
+     * Integra o conteúdo extraído no fluxo conversacional atual
+     */
+    private function montarRespostaMedia(string $tipoMidia, string $conteudo, Thread $thread): string
+    {
+        $estadoAtual = $thread->estado_atual ?? 'STATE_START';
+        
+        switch ($tipoMidia) {
+            case 'image':
+                return "✅ *Imagem analisada com sucesso!*\n\n" .
+                       "Aqui está o que identifiquei:\n\n" .
+                       $conteudo . "\n\n" .
+                       "Como posso ajudá-lo com relação a isso? 🤔";
+            
+            case 'pdf':
+                $preview = substr($conteudo, 0, 300);
+                return "✅ *PDF processado com sucesso!*\n\n" .
+                       "**Conteúdo extraído:**\n\n" .
+                       $preview .
+                       (strlen($conteudo) > 300 ? "\n\n...(conteúdo truncado)" : "") .
+                       "\n\nPodem me contar mais sobre o que você gostaria de fazer com este documento? 📄";
+            
+            case 'document':
+                $preview = substr($conteudo, 0, 300);
+                return "✅ *Documento processado!*\n\n" .
+                       "**Conteúdo identificado:**\n\n" .
+                       $preview .
+                       (strlen($conteudo) > 300 ? "\n\n...(conteúdo continua)" : "") .
+                       "\n\nComo posso ajudar com este documento? 📑";
+            
+            case 'audio':
+                return "✅ *Arquivo de áudio recebido!*\n\n" .
+                       $conteudo . "\n\n" .
+                       "Você pode me enviar o conteúdo em texto ou descrição? 🎙️";
+            
+            default:
+                return "✅ *Arquivo recebido e analisado!*\n\n" .
+                       $conteudo . "\n\n" .
+                       "Como posso ajudá-lo? 😊";
+        }
     }
 }

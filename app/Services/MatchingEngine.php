@@ -245,7 +245,7 @@ class MatchingEngine
         $mensagem .= "\n*Como prefere continuar?*\n";
         $mensagem .= "→ Quero ajustar (bairro, valor, etc.)\n";
         $mensagem .= "→ Agendar visita em uma delas\n";
-        $mensagem .= "→ Falar com corretor\n";
+        $mensagem .= "→ Refinbar busca (bairro, valor, quartos)\n";
 
         return [
             'mensagem' => $mensagem,

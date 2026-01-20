@@ -15,6 +15,7 @@ class AgenteGerado extends Model
         'empresa_id',
         'funcao',
         'agente_base_id',
+        'assistant_id',
     ];
 
     public function empresa()
