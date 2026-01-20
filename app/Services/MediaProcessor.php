@@ -88,6 +88,7 @@ class MediaProcessor
     {
         $url = $imageData['url'] ?? null;
         $mimetype = $imageData['mimetype'] ?? 'image/jpeg';
+        $mediaKey = $imageData['mediaKey'] ?? null; // Chave de criptografia do WhatsApp
         
         if (!$url) {
             return [
@@ -126,6 +127,24 @@ class MediaProcessor
                 throw new Exception("Falha ao baixar imagem: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
             }
 
+            // Se houver mediaKey, descriptografa o arquivo (é criptografado pelo WhatsApp)
+            if ($mediaKey) {
+                Log::info('Descriptografando imagem com mediaKey', [
+                    'tamanho_antes' => strlen($imageContent),
+                    'mediaKey_size' => strlen($mediaKey)
+                ]);
+                
+                $imageContent = $this->descriptografarMidiaWhatsApp($imageContent, $mediaKey);
+                if ($imageContent === null) {
+                    Log::warning('Falha ao descriptografar imagem', [
+                        'url' => substr($url, 0, 100),
+                        'mimetype' => $mimetype,
+                        'mediaKey_length' => strlen($mediaKey)
+                    ]);
+                    throw new Exception("Falha ao descriptografar arquivo de imagem");
+                }
+            }
+
             $imageData = $imageContent;
             $fileSize = strlen($imageData);
 
@@ -136,11 +155,11 @@ class MediaProcessor
             // Valida se a imagem é realmente um arquivo de imagem válido
             // Verifica magic bytes do arquivo
             if (!$this->validarFormatoImagem($imageData, $mimetype)) {
-                Log::warning('Arquivo de imagem inválido ou corrompido', [
-                    'url' => $url,
+                Log::warning('Arquivo de imagem inválido ou corrompido após descriptografia', [
                     'mimetype' => $mimetype,
                     'tamanho' => $fileSize,
-                    'primeiros_bytes' => bin2hex(substr($imageData, 0, 16))
+                    'primeiros_bytes' => bin2hex(substr($imageData, 0, 16)),
+                    'descriptografado' => $mediaKey ? 'sim' : 'não'
                 ]);
                 // Continua mesmo assim, pode ser arquivo válido mas magic bytes diferente
             }
@@ -565,6 +584,70 @@ class MediaProcessor
         ];
 
         return $map[$mimetype] ?? 'bin';
+    }
+
+    /**
+     * Descriptografa arquivo de mídia do WhatsApp usando mediaKey
+     * WhatsApp envia arquivos criptografados que precisam ser descriptografados
+     */
+    private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey): ?string
+    {
+        try {
+            // Descriptografa usando algoritmo do WhatsApp
+            // mediaKey é a chave base64 enviada pelo WhatsApp
+            $chaveBytes = base64_decode($mediaKey);
+            
+            if ($chaveBytes === false || strlen($chaveBytes) !== 32) {
+                Log::error('MediaKey inválido (deve ser 32 bytes)', [
+                    'mediaKey_length' => strlen($mediaKey),
+                    'bytes_length' => $chaveBytes ? strlen($chaveBytes) : 'null'
+                ]);
+                return null;
+            }
+            
+            // Expand usando HmacSHA256 conforme especificação WhatsApp
+            // Para imagem: "WhatsApp Image Keys"
+            $expanded = hash_hmac('sha256', 'WhatsApp Image Keys', $chaveBytes, true);
+            
+            // Remove últimos 10 bytes (HMAC de verificação)
+            $conteudoSemHmac = substr($conteudoCriptografado, 0, -10);
+            
+            // Chave de criptografia são os bytes 112-143 da chave expandida
+            $cipherKey = substr($expanded, 16, 32);
+            
+            // IV são os bytes 0-15 da chave expandida  
+            $iv = substr($expanded, 0, 16);
+            
+            // Descriptografa usando AES-256-CBC
+            $descriptografado = openssl_decrypt(
+                $conteudoSemHmac,
+                'AES-256-CBC',
+                $cipherKey,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+            
+            if ($descriptografado === false) {
+                Log::error('Falha na descriptografia AES-256-CBC', [
+                    'openssl_error' => openssl_error_string()
+                ]);
+                return null;
+            }
+            
+            Log::info('Arquivo descriptografado com sucesso', [
+                'tamanho_original' => strlen($conteudoCriptografado),
+                'tamanho_descriptografado' => strlen($descriptografado),
+                'primeiros_bytes' => bin2hex(substr($descriptografado, 0, 8))
+            ]);
+            
+            return $descriptografado;
+        } catch (\Exception $e) {
+            Log::error('Erro ao descriptografar mídia WhatsApp', [
+                'erro' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
     }
 
     /**
