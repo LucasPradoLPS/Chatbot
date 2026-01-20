@@ -589,7 +589,7 @@ class MediaProcessor
     /**
      * Descriptografa arquivo de mídia do WhatsApp usando mediaKey
      * WhatsApp envia arquivos criptografados que precisam ser descriptografados
-     * Algoritmo: AES-256-CBC com chave derivada do mediaKey via HKDF
+     * Algoritmo: AES-256-CBC baseado na implementação do WhatsApp
      */
     private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey): ?string
     {
@@ -608,17 +608,18 @@ class MediaProcessor
             // Remove últimos 10 bytes (HMAC de verificação)
             $conteudoSemHmac = substr($conteudoCriptografado, 0, -10);
             
-            // WhatsApp usa derivação de chave: HKDF(SHA256)
-            // com salt=0 e info específico do tipo de mídia
-            // Para imagem: expandindo com "WhatsApp Image Keys"
+            // WhatsApp media decryption:
+            // 1. Derive key and IV from mediaKey using HMAC-SHA256
+            // 2. Use the derived values to decrypt with AES-256-CBC
             
-            // Chave de criptografia: HMAC-SHA256(mediaKey, "WhatsApp Image Keys")
-            $cipherKey = hash_hmac('sha256', 'WhatsApp Image Keys', $mediaKeyBytes, true);
-            $cipherKey = substr($cipherKey, 0, 32); // 32 bytes para AES-256
+            // Derivar chave e IV a partir do mediaKey
+            // IV + Cipher Key é o resultado de HMAC-SHA256(mediaKey, "WhatsApp Image Keys")
+            $derivedKey = hash_hmac('sha256', 'WhatsApp Image Keys', $mediaKeyBytes, true);
             
-            // IV: Primeiros 16 bytes da expansão
-            $expanded = hash_hmac('sha256', 'WhatsApp Image Keys', $mediaKeyBytes, true);
-            $iv = substr($expanded, 0, 16);
+            // Primeiros 16 bytes = IV
+            // Próximos 32 bytes = Cipher Key
+            $iv = substr($derivedKey, 0, 16);
+            $cipherKey = substr($derivedKey, 16, 32);
             
             // Descriptografa usando AES-256-CBC
             $descriptografado = openssl_decrypt(
