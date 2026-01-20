@@ -131,7 +131,8 @@ class MediaProcessor
             if ($mediaKey) {
                 Log::info('Descriptografando imagem com mediaKey', [
                     'tamanho_antes' => strlen($imageContent),
-                    'mediaKey_size' => strlen($mediaKey)
+                    'mediaKey_size' => strlen($mediaKey),
+                    'mediaKey_decoded_size' => strlen(base64_decode($mediaKey) ?? '')
                 ]);
                 
                 $imageContent = $this->descriptografarMidiaWhatsApp($imageContent, $mediaKey);
@@ -139,10 +140,16 @@ class MediaProcessor
                     Log::warning('Falha ao descriptografar imagem', [
                         'url' => substr($url, 0, 100),
                         'mimetype' => $mimetype,
-                        'mediaKey_length' => strlen($mediaKey)
+                        'mediaKey_length' => strlen($mediaKey),
+                        'arquivo_tamanho_original' => strlen($_imageContent ?? 0)
                     ]);
                     throw new Exception("Falha ao descriptografar arquivo de imagem");
                 }
+                
+                Log::info('Imagem descriptografada com sucesso', [
+                    'tamanho_apos' => strlen($imageContent),
+                    'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
+                ]);
             }
 
             $imageData = $imageContent;
