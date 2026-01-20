@@ -589,7 +589,7 @@ class MediaProcessor
     /**
      * Descriptografa arquivo de mídia do WhatsApp usando mediaKey
      * WhatsApp envia arquivos criptografados que precisam ser descriptografados
-     * Algoritmo: AES-256-CBC baseado na implementação do WhatsApp
+     * Algoritmo: AES-256-CBC com derivação de chave via Hashed Media Key
      */
     private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey): ?string
     {
@@ -608,18 +608,36 @@ class MediaProcessor
             // Remove últimos 10 bytes (HMAC de verificação)
             $conteudoSemHmac = substr($conteudoCriptografado, 0, -10);
             
-            // WhatsApp media decryption:
-            // 1. Derive key and IV from mediaKey using HMAC-SHA256
-            // 2. Use the derived values to decrypt with AES-256-CBC
+            // WhatsApp media decryption usa:
+            // expandedMediaKey = HMAC(mediaKey, "WhatsApp Image Keys")
+            // Depois: IV = expandedMediaKey[0:16], Key = expandedMediaKey[16:48]
             
-            // Derivar chave e IV a partir do mediaKey
-            // IV + Cipher Key é o resultado de HMAC-SHA256(mediaKey, "WhatsApp Image Keys")
-            $derivedKey = hash_hmac('sha256', 'WhatsApp Image Keys', $mediaKeyBytes, true);
+            // Mas como só temos 32 bytes do mediaKey, expandimos para 64 bytes
+            // usando hash SHA256 do mediaKey + constante
+            $sha256 = hash('sha256', $mediaKeyBytes . 'WhatsApp Image Keys', true);
             
-            // Primeiros 16 bytes = IV
-            // Próximos 32 bytes = Cipher Key
-            $iv = substr($derivedKey, 0, 16);
-            $cipherKey = substr($derivedKey, 16, 32);
+            // Alternativamente, tenta usar hash_hkdf se disponível (PHP 7.1.2+)
+            if (function_exists('hash_hkdf')) {
+                $expandedKey = hash_hkdf('sha256', $mediaKeyBytes, '', 'WhatsApp Image Keys', 112);
+                Log::debug('Usando HKDF para expansão de chave');
+            } else {
+                // Fallback: usar HMAC para expansão
+                // HMAC(SHA256, mediaKey, "WhatsApp Image Keys") repetido
+                $part1 = hash_hmac('sha256', chr(1) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
+                $part2 = hash_hmac('sha256', $part1 . chr(2) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
+                $expandedKey = substr($part1 . $part2, 0, 112);
+            }
+            
+            // IV: bytes 0-15
+            $iv = substr($expandedKey, 0, 16);
+            // Cipher Key: bytes 16-47
+            $cipherKey = substr($expandedKey, 16, 32);
+            
+            Log::debug('Chave derivada', [
+                'expanded_len' => strlen($expandedKey),
+                'iv_hex' => bin2hex($iv),
+                'key_hex' => bin2hex($cipherKey)
+            ]);
             
             // Descriptografa usando AES-256-CBC
             $descriptografado = openssl_decrypt(
