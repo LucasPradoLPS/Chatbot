@@ -763,18 +763,32 @@ class ProcessWhatsappMessage implements ShouldQueue
                 ['type' => 'text', 'text' => $textoContextoFluxo . $textoEstado . $textoIntent . $textoContexto . $textoSlots . "\n\n" . $regrasSlots . "\n\nMensagem do cliente: " . $textoMensagemAtual]
             ];
 
-            Http::withToken(config('services.openai.key'))
-                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-                ->post("https://api.openai.com/v1/threads/{$threadId}/messages", [
-                    'role' => 'user',
-                    'content' => $conteudoAtual,
+            // Se em HANDOFF, não chamar IA novamente - enviar apenas mensagem de transição
+            if ($estadoAtual === 'STATE_HANDOFF') {
+                Log::info('[HANDOFF] Não processando pela IA - em estado de handoff', [
+                    'numero_cliente' => $clienteId,
+                    'estado_atual' => $estadoAtual,
                 ]);
+                
+                // Usar resposta customizada se definida, caso contrário usar padrão
+                if (empty($respostaLimpa)) {
+                    $respostaLimpa = "👨‍💼 Vou te conectar a um corretor agora.\n\nPor favor, aguarde um momento...\n\n---\n\nMeu nome é Lucas e darei continuidade ao seu atendimento. Como posso ajudá-lo?";
+                }
+                
+                $respostaBruta = $respostaLimpa;
+            } else {
+                Http::withToken(config('services.openai.key'))
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->post("https://api.openai.com/v1/threads/{$threadId}/messages", [
+                        'role' => 'user',
+                        'content' => $conteudoAtual,
+                    ]);
 
-            $runResponseObj = Http::withToken(config('services.openai.key'))
-                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-                ->post("https://api.openai.com/v1/threads/{$threadId}/runs", [
-                    'assistant_id' => $assistantId,
-                ]);
+                $runResponseObj = Http::withToken(config('services.openai.key'))
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->post("https://api.openai.com/v1/threads/{$threadId}/runs", [
+                        'assistant_id' => $assistantId,
+                    ]);
 
             $runResponse = $runResponseObj->json();
             $runId = $runResponse['id'] ?? null;
@@ -877,6 +891,7 @@ class ProcessWhatsappMessage implements ShouldQueue
                 }
 
                 $respostaLimpa = trim(str_replace($slotsMatch[0], '', $respostaBruta));
+            }
             }
 
             // Atualizar visão local dos slots após possível atualização do assistant
