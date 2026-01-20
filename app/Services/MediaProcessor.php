@@ -127,29 +127,34 @@ class MediaProcessor
                 throw new Exception("Falha ao baixar imagem: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
             }
 
-            // Se houver mediaKey, descriptografa o arquivo (é criptografado pelo WhatsApp)
+            // Se houver mediaKey, tenta descriptografar o arquivo (pode estar criptografado pelo WhatsApp)
+            $descriptionStatus = 'nao_tentado';
             if ($mediaKey) {
-                Log::info('Descriptografando imagem com mediaKey', [
+                Log::info('Tentando descriptografar imagem com mediaKey', [
                     'tamanho_antes' => strlen($imageContent),
-                    'mediaKey_size' => strlen($mediaKey),
-                    'mediaKey_decoded_size' => strlen(base64_decode($mediaKey) ?? '')
+                    'mediaKey_size' => strlen($mediaKey)
                 ]);
                 
-                $imageContent = $this->descriptografarMidiaWhatsApp($imageContent, $mediaKey);
-                if ($imageContent === null) {
-                    Log::warning('Falha ao descriptografar imagem', [
-                        'url' => substr($url, 0, 100),
-                        'mimetype' => $mimetype,
-                        'mediaKey_length' => strlen($mediaKey),
-                        'arquivo_tamanho_original' => strlen($_imageContent ?? 0)
+                $descriptografado = $this->descriptografarMidiaWhatsApp($imageContent, $mediaKey);
+                
+                if ($descriptografado !== null) {
+                    // Descriptografia bem-sucedida
+                    $imageContent = $descriptografado;
+                    $descriptionStatus = 'sucesso';
+                    Log::info('Imagem descriptografada com sucesso', [
+                        'tamanho_apos' => strlen($imageContent),
+                        'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
                     ]);
-                    throw new Exception("Falha ao descriptografar arquivo de imagem");
+                } else {
+                    // Falha na descriptografia - tenta usar o arquivo como está
+                    // (pode ser que não esteja realmente criptografado)
+                    $descriptionStatus = 'falha_mas_continuando';
+                    Log::warning('Falha na descriptografia, tentando usar arquivo original', [
+                        'tamanho_original' => strlen($imageContent),
+                        'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
+                    ]);
+                    // Continua com o arquivo original
                 }
-                
-                Log::info('Imagem descriptografada com sucesso', [
-                    'tamanho_apos' => strlen($imageContent),
-                    'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
-                ]);
             }
 
             $imageData = $imageContent;
