@@ -117,6 +117,10 @@ return [
     // Processar webhook de forma síncrona para testes
     'queue_sync_webhook' => env('QUEUE_SYNC_WEBHOOK', false),
 
+    // Quando true, não bloqueia mensagens fora do horário comercial.
+    // Útil para manter o bot funcionando 24/7.
+    'ignore_off_hours' => env('IGNORE_OFF_HOURS', false),
+
     /*
     |--------------------------------------------------------------------------
     | Chatbot - Regras de envio para Evolution

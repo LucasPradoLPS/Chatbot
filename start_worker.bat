@@ -8,4 +8,4 @@ echo Pressione Ctrl+C para parar
 echo.
 
 cd /d "%~dp0"
-php artisan queue:work --queue=whatsapp --tries=3 --timeout=300 --sleep=3
+php -d max_execution_time=0 artisan queue:work --queue=default,handoff --tries=3 --timeout=300 --sleep=3

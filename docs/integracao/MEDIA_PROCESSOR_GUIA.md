@@ -1,89 +1,89 @@
-# 🤖 Agente de Processamento de Mídia - Documentação Completa
+﻿# ðŸ¤– Agente de Processamento de MÃ­dia - DocumentaÃ§Ã£o Completa
 
-## Visão Geral
+## VisÃ£o Geral
 
-O **MediaProcessor** é um agente PHP inteligente que processa imagens, PDFs, documentos e áudio enviados via WhatsApp. Integra-se com OpenAI Vision para análise de conteúdo visual e extrai texto de documentos automaticamente.
+O **MediaProcessor** Ã© um agente PHP inteligente que processa imagens, PDFs, documentos e Ã¡udio enviados via WhatsApp. Integra-se com OpenAI Vision para anÃ¡lise de conteÃºdo visual e extrai texto de documentos automaticamente.
 
-## 📋 Funcionalidades
+## ðŸ“‹ Funcionalidades
 
-### ✅ Tipos de Arquivo Suportados
+### âœ… Tipos de Arquivo Suportados
 
 #### **Imagens**
 - JPEG, PNG, GIF, WebP
-- **Processamento**: Análise com OpenAI Vision API
-- **Output**: Descrição detalhada do conteúdo visual
-- **Exemplo**: Usuário envia foto de imóvel → Bot descreve características visuais
+- **Processamento**: AnÃ¡lise com OpenAI Vision API
+- **Output**: DescriÃ§Ã£o detalhada do conteÃºdo visual
+- **Exemplo**: UsuÃ¡rio envia foto de imÃ³vel â†’ Bot descreve caracterÃ­sticas visuais
 
 #### **PDFs**
 - Formato: application/pdf
-- **Processamento**: Extração de texto com pdftotext (spatie/pdf-to-text)
-- **Output**: Texto extraído ou resumo do conteúdo
-- **Exemplo**: Usuário envia contrato → Bot extrai e analisa termos
+- **Processamento**: ExtraÃ§Ã£o de texto com pdftotext (spatie/pdf-to-text)
+- **Output**: Texto extraÃ­do ou resumo do conteÃºdo
+- **Exemplo**: UsuÃ¡rio envia contrato â†’ Bot extrai e analisa termos
 
 #### **Documentos**
 - DOCX (Word), XLSX (Excel), CSV, TXT
-- **Processamento**: Extração de texto baseado no tipo
-- **Output**: Conteúdo estruturado e interpretável
-- **Exemplo**: Usuário envia planilha de orçamento → Bot analisa números
+- **Processamento**: ExtraÃ§Ã£o de texto baseado no tipo
+- **Output**: ConteÃºdo estruturado e interpretÃ¡vel
+- **Exemplo**: UsuÃ¡rio envia planilha de orÃ§amento â†’ Bot analisa nÃºmeros
 
-#### **Áudio**
+#### **Ãudio**
 - OGG, MP3
 - **Processamento**: Armazenamento e interface para Whisper API (futuro)
-- **Output**: Informação de recebimento
-- **Exemplo**: Usuário envia mensagem de voz com contexto longo
+- **Output**: InformaÃ§Ã£o de recebimento
+- **Exemplo**: UsuÃ¡rio envia mensagem de voz com contexto longo
 
-#### **Vídeo**
-- Status: Não suportado (requer ffmpeg/conversão)
-- **Fallback**: Mensagem pedindo ao usuário descrever em texto
+#### **VÃ­deo**
+- Status: NÃ£o suportado (requer ffmpeg/conversÃ£o)
+- **Fallback**: Mensagem pedindo ao usuÃ¡rio descrever em texto
 
 ---
 
-## 🏗️ Arquitetura
+## ðŸ—ï¸ Arquitetura
 
 ### Fluxo de Processamento
 
 ```
 WhatsApp (Evolution API)
-         ↓
+         â†“
     [Webhook recebe]
-         ↓
+         â†“
 ProcessWhatsappMessage.php
-         ↓
-    [Detecta tipo de mídia]
-         ↓
+         â†“
+    [Detecta tipo de mÃ­dia]
+         â†“
     processarMedia() method
-         ↓
+         â†“
 MediaProcessor::processar()
-         ↓
+         â†“
   [Valida tipo/tamanho]
-         ↓
+         â†“
   [Download do arquivo]
-         ↓
-[Processamento específico]
-  ├─ Imagem → OpenAI Vision
-  ├─ PDF → Extração de texto
-  ├─ Documento → Parse XML/CSV
-  └─ Áudio → Armazenamento
-         ↓
+         â†“
+[Processamento especÃ­fico]
+  â”œâ”€ Imagem â†’ OpenAI Vision
+  â”œâ”€ PDF â†’ ExtraÃ§Ã£o de texto
+  â”œâ”€ Documento â†’ Parse XML/CSV
+  â””â”€ Ãudio â†’ Armazenamento
+         â†“
 [Armazenamento local]
-         ↓
+         â†“
 [Resposta contextualizada]
-         ↓
+         â†“
 Evolution API (WhatsApp)
 ```
 
 ### Componentes Principais
 
 #### 1. **MediaProcessor** (`app/Services/MediaProcessor.php`)
-- Serviço central de processamento
-- Métodos públicos:
-  - `processar(array $msgData): array` - Processa qualquer tipo de mídia
+- ServiÃ§o central de processamento
+- MÃ©todos pÃºblicos:
+  - `processar(array $msgData): array` - Processa qualquer tipo de mÃ­dia
   - `limparArquivosAntigos(int $diasRetencao): array` - Remove arquivos antigos
 
-#### 2. **ProcessWhatsappMessage** (integração)
+#### 2. **ProcessWhatsappMessage** (integraÃ§Ã£o)
 - Importa: `use App\Services\MediaProcessor;`
 - Chama: `processarMedia($tipoMensagem, $msgData, ...)`
-- Métodos adicionados:
+- MÃ©todos adicionados:
   - `processarMedia()` - Orquestra processamento
   - `montarRespostaMedia()` - Cria resposta contextualizada
 
@@ -93,49 +93,49 @@ Evolution API (WhatsApp)
 
 ---
 
-## 💻 Como Usar
+## ðŸ’» Como Usar
 
-### 1. **Processamento Automático (via WhatsApp)**
+### 1. **Processamento AutomÃ¡tico (via WhatsApp)**
 
-Usuário envia uma imagem para o bot:
+UsuÃ¡rio envia uma imagem para o bot:
 
 ```
-Usuário: [envia imagem de imóvel]
-Bot: ✅ Imagem analisada com sucesso!
+UsuÃ¡rio: [envia imagem de imÃ³vel]
+Bot: âœ… Imagem analisada com sucesso!
 
-Aqui está o que identifiquei:
+Aqui estÃ¡ o que identifiquei:
 
-📷 **Análise de Imagem:**
+ðŸ“· **AnÃ¡lise de Imagem:**
 A imagem mostra uma sala de estar moderna com...
-- Movedores de sofá cinza em estilo minimalista
+- Movedores de sofÃ¡ cinza em estilo minimalista
 - Piso em madeira clara
-- Iluminação natural por janelas amplas
-- Decoração contemporânea
+- IluminaÃ§Ã£o natural por janelas amplas
+- DecoraÃ§Ã£o contemporÃ¢nea
 
-Como posso ajudá-lo com relação a isso? 🤔
+Como posso ajudÃ¡-lo com relaÃ§Ã£o a isso? ðŸ¤”
 ```
 
 ### 2. **PDF com Contrato**
 
 ```
-Usuário: [envia PDF de contrato]
-Bot: ✅ PDF processado com sucesso!
+UsuÃ¡rio: [envia PDF de contrato]
+Bot: âœ… PDF processado com sucesso!
 
-**Conteúdo extraído:**
+**ConteÃºdo extraÃ­do:**
 
 CONTRATO DE COMPRA E VENDA
-Partes: Vendedor: João Silva
+Partes: Vendedor: JoÃ£o Silva
         Comprador: Maria Santos
         
-Objeto: Imóvel localizado em São Paulo, SP
+Objeto: ImÃ³vel localizado em SÃ£o Paulo, SP
         Bairro: Morumbi
         
 Valor: R$ 650.000,00
 Forma de pagamento: 50% na assinatura...
 
-...(conteúdo truncado)
+...(conteÃºdo truncado)
 
-Como posso ajudar com este documento? 📄
+Como posso ajudar com este documento? ðŸ“„
 ```
 
 ### 3. **Comando Manual (Desenvolvimento)**
@@ -153,18 +153,18 @@ php artisan media:cleanup --days=7
 
 ---
 
-## 🔧 Configuração
+## ðŸ”§ ConfiguraÃ§Ã£o
 
-### Pré-requisitos
+### PrÃ©-requisitos
 
 1. **OpenAI API Key** (em `.env`):
 ```env
-OPENAI_KEY=sk-proj-xxxxxxxx
+OPENAI_KEY=YOUR_OPENAI_KEY
 ```
 
 2. **Armazenamento de Arquivos**:
-- Disco `public` deve estar configurado (padrão Laravel)
-- Pasta `storage/app/public/whatsapp_media` será criada automaticamente
+- Disco `public` deve estar configurado (padrÃ£o Laravel)
+- Pasta `storage/app/public/whatsapp_media` serÃ¡ criada automaticamente
 
 3. **Bibliotecas Opcionais** (para PDFs):
 ```bash
@@ -179,11 +179,11 @@ composer require phpoffice/phpspreadsheet  # Para XLSX
 private $maxFileSize = 50 * 1024 * 1024; // 50MB
 ```
 
-Ajustar em `MediaProcessor.php` conforme necessário.
+Ajustar em `MediaProcessor.php` conforme necessÃ¡rio.
 
 ---
 
-## 📝 Exemplo de Implementação
+## ðŸ“ Exemplo de ImplementaÃ§Ã£o
 
 ### Estrutura de Resposta
 
@@ -193,7 +193,7 @@ Quando processamento **bem-sucedido**:
 [
     'success' => true,
     'tipo_midia' => 'image',  // image|pdf|document|audio
-    'conteudo_extraido' => 'Descrição detalhada do arquivo...',
+    'conteudo_extraido' => 'DescriÃ§Ã£o detalhada do arquivo...',
     'arquivo_local' => 'whatsapp_media/images/img_123456.jpg',
     'metadados' => [
         'tamanho_bytes' => 245632,
@@ -210,13 +210,13 @@ Quando **falha**:
 [
     'success' => false,
     'tipo_midia' => 'image',
-    'erro' => 'URL da imagem não fornecida'
+    'erro' => 'URL da imagem nÃ£o fornecida'
 ]
 ```
 
 ### Respostas Customizadas
 
-Editar método `montarRespostaMedia()` em `ProcessWhatsappMessage.php`:
+Editar mÃ©todo `montarRespostaMedia()` em `ProcessWhatsappMessage.php`:
 
 ```php
 private function montarRespostaMedia(string $tipoMidia, string $conteudo, Thread $thread): string
@@ -231,23 +231,23 @@ private function montarRespostaMedia(string $tipoMidia, string $conteudo, Thread
 
 ---
 
-## 🚀 Recursos Avançados
+## ðŸš€ Recursos AvanÃ§ados
 
 ### 1. **OpenAI Vision para Imagens**
 
-O agente usa `gpt-4o-mini` para análise visual:
+O agente usa `gpt-4o-mini` para anÃ¡lise visual:
 
 ```php
 private function analisarImagemComOpenAI(string $imageUrl): string
 {
     // Envia imagem para GPT-4 Vision
-    // Retorna análise estruturada do conteúdo
+    // Retorna anÃ¡lise estruturada do conteÃºdo
 }
 ```
 
 **Customizar prompt**: Editar em `MediaProcessor.php` linha ~270
 
-### 2. **Extração de Texto de PDFs**
+### 2. **ExtraÃ§Ã£o de Texto de PDFs**
 
 Usa biblioteca Spatie:
 
@@ -259,7 +259,7 @@ private function extrairTextoPDF(string $conteudoPDF): string
 }
 ```
 
-Se não instalado, retorna informação genérica.
+Se nÃ£o instalado, retorna informaÃ§Ã£o genÃ©rica.
 
 ### 3. **Processamento de Documentos DOCX**
 
@@ -272,9 +272,9 @@ if ($mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingm
 }
 ```
 
-### 4. **Integração com Estado do Thread**
+### 4. **IntegraÃ§Ã£o com Estado do Thread**
 
-Armazena metadados no histórico:
+Armazena metadados no histÃ³rico:
 
 ```php
 $historico[] = [
@@ -291,28 +291,28 @@ $thread->update(['estado_historico' => $historico]);
 
 ---
 
-## 🛡️ Validações & Segurança
+## ðŸ›¡ï¸ ValidaÃ§Ãµes & SeguranÃ§a
 
-### Validações Implementadas
+### ValidaÃ§Ãµes Implementadas
 
 1. **Tipo de Arquivo**
    - Whitelist de MIME types suportados
-   - Rejeita tipos não reconhecidos
+   - Rejeita tipos nÃ£o reconhecidos
 
 2. **Tamanho do Arquivo**
-   - Máximo 50MB (configurável)
+   - MÃ¡ximo 50MB (configurÃ¡vel)
    - Previne consumo excessivo de recursos
 
 3. **Tipos de MIME**
    - Verifica antes de processar
-   - Diferencia entre imagem, PDF, documento, áudio
+   - Diferencia entre imagem, PDF, documento, Ã¡udio
 
 4. **Tratamento de Erros**
-   - Try-catch em múltiplos níveis
+   - Try-catch em mÃºltiplos nÃ­veis
    - Logs detalhados de falhas
-   - Respostas amigáveis ao usuário
+   - Respostas amigÃ¡veis ao usuÃ¡rio
 
-### Recomendações de Segurança
+### RecomendaÃ§Ãµes de SeguranÃ§a
 
 ```env
 # .env
@@ -326,82 +326,82 @@ MEDIA_STORAGE_DISK=public     # Disco seguro
 ```php
 // Arquivos armazenados em:
 storage/app/public/whatsapp_media/
-├── images/        # Imagens processadas
-├── documents/     # PDFs e documentos
-├── audio/         # Arquivos de áudio
-└── [uuid_arquivo] # Nomes únicos (evita colisão)
+â”œâ”€â”€ images/        # Imagens processadas
+â”œâ”€â”€ documents/     # PDFs e documentos
+â”œâ”€â”€ audio/         # Arquivos de Ã¡udio
+â””â”€â”€ [uuid_arquivo] # Nomes Ãºnicos (evita colisÃ£o)
 ```
 
 ---
 
-## 📊 Exemplos de Casos de Uso
+## ðŸ“Š Exemplos de Casos de Uso
 
-### Caso 1: Análise de Imóvel via Foto
+### Caso 1: AnÃ¡lise de ImÃ³vel via Foto
 ```
-Usuário: [envia foto de apartamento]
-         ↓
+UsuÃ¡rio: [envia foto de apartamento]
+         â†“
 Bot analisa com Vision API
-         ↓
+         â†“
 Bot: "Vejo uma sala ampla com 3 janelas, piso em porcelanato,
-     paredes brancas e iluminação natural excelente. 
-     Gostaria de saber mais sobre localização ou preço?"
+     paredes brancas e iluminaÃ§Ã£o natural excelente. 
+     Gostaria de saber mais sobre localizaÃ§Ã£o ou preÃ§o?"
 ```
 
 ### Caso 2: Documento de RG/Passaporte
 ```
-Usuário: [envia scaneamento de RG]
-         ↓
+UsuÃ¡rio: [envia scaneamento de RG]
+         â†“
 Bot extrai texto (futuro: OCR com Tesseract)
-         ↓
+         â†“
 Bot: "Recebi seu documento. Preciso confirmar: 
-     Seu CPF está registrado como XXXXX?"
+     Seu CPF estÃ¡ registrado como XXXXX?"
 ```
 
-### Caso 3: Planilha de Orçamento
+### Caso 3: Planilha de OrÃ§amento
 ```
-Usuário: [envia XLSX com preços]
-         ↓
+UsuÃ¡rio: [envia XLSX com preÃ§os]
+         â†“
 Bot extrai dados CSV
-         ↓
-Bot: "Vi sua planilha com 15 imóveis listados.
-     Posso ajudá-lo a filtrar por bairro ou valor?"
+         â†“
+Bot: "Vi sua planilha com 15 imÃ³veis listados.
+     Posso ajudÃ¡-lo a filtrar por bairro ou valor?"
 ```
 
 ### Caso 4: PDF de Contrato
 ```
-Usuário: [envia contrato de venda]
-         ↓
+UsuÃ¡rio: [envia contrato de venda]
+         â†“
 Bot extrai texto completo
-         ↓
+         â†“
 Bot: "Li seu contrato. Identifiquei:
      - Valor: R$ 650.000
-     - Localização: Morumbi, SP
+     - LocalizaÃ§Ã£o: Morumbi, SP
      - Forma pagamento: 50% entrada
      
-     Tem dúvidas sobre alguma cláusula?"
+     Tem dÃºvidas sobre alguma clÃ¡usula?"
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
-### Problema: "Imagem não consegue ser analisada"
-**Causa**: OpenAI API key não configurada
-**Solução**: Adicionar `OPENAI_KEY=sk-...` em `.env`
+### Problema: "Imagem nÃ£o consegue ser analisada"
+**Causa**: OpenAI API key nÃ£o configurada
+**SoluÃ§Ã£o**: Adicionar `OPENAI_KEY=YOUR_OPENAI_KEY` em `.env`
 
-### Problema: "PDF recebido mas sem texto extraível"
-**Causa**: Biblioteca `spatie/pdf-to-text` não instalada
-**Solução**: `composer require spatie/pdf-to-text`
+### Problema: "PDF recebido mas sem texto extraÃ­vel"
+**Causa**: Biblioteca `spatie/pdf-to-text` nÃ£o instalada
+**SoluÃ§Ã£o**: `composer require spatie/pdf-to-text`
 
 ### Problema: Arquivo muito grande / timeout
-**Causa**: Arquivo excede 50MB ou downloads lentíssimos
-**Solução**: 
+**Causa**: Arquivo excede 50MB ou downloads lentÃ­ssimos
+**SoluÃ§Ã£o**: 
 - Reduzir tamanho do arquivo
-- Aumentar timeout em `Http::timeout(30)` → `Http::timeout(60)`
+- Aumentar timeout em `Http::timeout(30)` â†’ `Http::timeout(60)`
 
 ### Problema: Arquivos acumulando no disco
-**Causa**: Não há limpeza automática
-**Solução**: Agendar comando: `php artisan media:cleanup --days=30` via cron
+**Causa**: NÃ£o hÃ¡ limpeza automÃ¡tica
+**SoluÃ§Ã£o**: Agendar comando: `php artisan media:cleanup --days=30` via cron
 
 ```php
 // app/Console/Kernel.php
@@ -410,11 +410,11 @@ $schedule->command('media:cleanup --days=30')->daily();
 
 ---
 
-## 📈 Performance & Otimizações
+## ðŸ“ˆ Performance & OtimizaÃ§Ãµes
 
-### Recomendações
+### RecomendaÃ§Ãµes
 
-1. **Cache de Análises**
+1. **Cache de AnÃ¡lises**
    ```php
    $cacheKey = 'media_analysis_' . md5($fileContent);
    Cache::remember($cacheKey, 24*60, function() {
@@ -422,7 +422,7 @@ $schedule->command('media:cleanup --days=30')->daily();
    });
    ```
 
-2. **Fila Assíncrona**
+2. **Fila AssÃ­ncrona**
    - Arquivos grandes: processar em background job
    - Usar `Queue::connection('sync')` para testes
 
@@ -438,27 +438,28 @@ $schedule->command('media:cleanup --days=30')->daily();
 
 ---
 
-## 🔮 Roadmap Futuro
+## ðŸ”® Roadmap Futuro
 
-- [ ] **Transcrição de Áudio**: Integrar Whisper API
+- [ ] **TranscriÃ§Ã£o de Ãudio**: Integrar Whisper API
 - [ ] **OCR de Imagens**: Tesseract para texto em imagens
-- [ ] **Análise de Documentos**: Claude para summarização
-- [ ] **Cache Distribuído**: Redis para análises
+- [ ] **AnÃ¡lise de Documentos**: Claude para summarizaÃ§Ã£o
+- [ ] **Cache DistribuÃ­do**: Redis para anÃ¡lises
 - [ ] **Webhook para Processamento**: Notificar quando pronto
 - [ ] **Streaming de Respostas**: Para arquivos grandes
-- [ ] **Suporte a Vídeos**: FFmpeg para extração de frames
+- [ ] **Suporte a VÃ­deos**: FFmpeg para extraÃ§Ã£o de frames
 
 ---
 
-## 📞 Contato & Suporte
+## ðŸ“ž Contato & Suporte
 
-Para dúvidas ou problemas, consulte:
+Para dÃºvidas ou problemas, consulte:
 - Logs: `storage/logs/laravel.log`
 - Arquivos processados: `storage/app/public/whatsapp_media/`
-- Código: `app/Services/MediaProcessor.php`
+- CÃ³digo: `app/Services/MediaProcessor.php`
 
 ---
 
-**Versão**: 1.0.0
-**Última atualização**: 16/01/2025
+**VersÃ£o**: 1.0.0
+**Ãšltima atualizaÃ§Ã£o**: 16/01/2025
 **Autor**: Agente Copilot
+

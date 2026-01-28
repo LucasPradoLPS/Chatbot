@@ -19,10 +19,36 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Aumentar timeout do PHP para jobs que podem levar tempo
-        // Máximo necessário é ~60s (30 tentativas de polling + latência)
-        if (function_exists('set_time_limit')) {
-            set_time_limit(120); // 2 minutos de segurança
+        // Evitar que comandos long-running (serve / queue:work) sejam mortos pelo timeout.
+        // Para web requests e comandos curtos, mantemos um limite razoável.
+        if (!function_exists('set_time_limit')) {
+            return;
         }
+
+        $defaultLimitSeconds = 120;
+
+        if (app()->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            $command = (string) ($argv[1] ?? '');
+
+            $longRunningCommands = [
+                'serve',
+                'queue:work',
+                'queue:listen',
+                'schedule:work',
+                'horizon',
+            ];
+
+            if (in_array($command, $longRunningCommands, true)) {
+                @ini_set('max_execution_time', '0');
+                set_time_limit(0);
+                return;
+            }
+
+            set_time_limit($defaultLimitSeconds);
+            return;
+        }
+
+        set_time_limit($defaultLimitSeconds);
     }
 }

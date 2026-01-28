@@ -5,19 +5,15 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Client\Response;
 use Exception;
 
-/**
- * MediaProcessor - Baixa e processa arquivos de mídia do WhatsApp (imagens, PDFs, documentos)
- * Integrado com OpenAI Vision para análise inteligente de conteúdo visual
- */
 class MediaProcessor
 {
-    private $openaiKey;
-    private $mediaDisk = 'public'; // Disco Laravel para armazenar arquivos
-    private $mediaPath = 'whatsapp_media'; // Pasta dentro do disco
-    private $maxFileSize = 50 * 1024 * 1024; // 50MB limite
+    private ?string $openaiKey;
+    private string $mediaDisk = 'public';
+    private string $mediaPath = 'whatsapp_media';
+    private int $maxFileSize = 50 * 1024 * 1024; // 50MB
+    private bool $verifySsl;
     
     const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const SUPPORTED_PDF_TYPES = ['application/pdf'];
@@ -36,43 +32,33 @@ class MediaProcessor
         if (!$this->openaiKey) {
             Log::warning('OPENAI_KEY não configurada - análise de mídia limitada');
         }
+
+        // SSL: em produção, verifique; em dev pode desligar via env
+        $this->verifySsl = (bool) (env('WHATSAPP_VERIFY_SSL', app()->environment('production')));
     }
 
-    /**
-     * Processa arquivo de mídia recebido do WhatsApp
-     * Detecta tipo (imagem, PDF, documento) e processa adequadamente
-     *
-     * @param array $msgData Dados da mensagem do WhatsApp
-     * @return array Resultado do processamento contendo:
-     *         - success: bool
-     *         - tipo_midia: string (image|pdf|document|audio|unknown)
-     *         - conteudo_extraido: string (texto extraído/descrito)
-     *         - arquivo_local: string (caminho local do arquivo)
-     *         - metadados: array (tamanho, mime, url)
-     *         - erro: string (se falhar)
-     */
     public function processar(array $msgData): array
     {
         try {
-            // Detecta tipo de mídia
             if (isset($msgData['imageMessage'])) {
                 return $this->processarImagem($msgData['imageMessage']);
             } elseif (isset($msgData['documentMessage'])) {
                 return $this->processarDocumento($msgData['documentMessage']);
             } elseif (isset($msgData['audioMessage'])) {
                 return $this->processarAudio($msgData['audioMessage']);
-            } else {
-                return [
-                    'success' => false,
-                    'tipo_midia' => 'unknown',
-                    'erro' => 'Tipo de mídia não reconhecido'
-                ];
             }
+
+            return [
+                'success' => false,
+                'tipo_midia' => 'unknown',
+                'erro' => 'Tipo de mídia não reconhecido'
+            ];
         } catch (Exception $e) {
             Log::error('Erro ao processar mídia', [
                 'erro' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+
             return [
                 'success' => false,
                 'erro' => 'Erro ao processar arquivo: ' . $e->getMessage()
@@ -80,116 +66,58 @@ class MediaProcessor
         }
     }
 
-    /**
-     * Processa imagem com OpenAI Vision
-     * Analisa conteúdo visual e retorna descrição estruturada
-     */
     private function processarImagem(array $imageData): array
     {
-        $url = $imageData['url'] ?? null;
+        $url      = $imageData['url'] ?? null;
         $mimetype = $imageData['mimetype'] ?? 'image/jpeg';
-        $mediaKey = $imageData['mediaKey'] ?? null; // Chave de criptografia do WhatsApp
-        
+        $mediaKey = $imageData['mediaKey'] ?? null;
+
         if (!$url) {
-            return [
-                'success' => false,
-                'tipo_midia' => 'image',
-                'erro' => 'URL da imagem não fornecida'
-            ];
+            return ['success' => false, 'tipo_midia' => 'image', 'erro' => 'URL da imagem não fornecida'];
         }
 
-        if (!in_array($mimetype, self::SUPPORTED_IMAGE_TYPES)) {
-            return [
-                'success' => false,
-                'tipo_midia' => 'image',
-                'erro' => "Tipo de imagem não suportado: $mimetype"
-            ];
+        if (!in_array($mimetype, self::SUPPORTED_IMAGE_TYPES, true)) {
+            return ['success' => false, 'tipo_midia' => 'image', 'erro' => "Tipo de imagem não suportado: $mimetype"];
         }
 
         try {
-            // Baixa imagem com timeout maior e curl direto
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            
-            $imageContent = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-            
-            if ($httpCode !== 200 || !$imageContent) {
-                throw new Exception("Falha ao baixar imagem: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
+            $bin = $this->baixarComCurl($url);
+
+            if (strlen($bin) > $this->maxFileSize) {
+                throw new Exception("Imagem muito grande: " . strlen($bin) . " bytes (máximo {$this->maxFileSize})");
             }
 
-            // Se houver mediaKey, tenta descriptografar o arquivo (pode estar criptografado pelo WhatsApp)
-            $descriptionStatus = 'nao_tentado';
+            // Se houver mediaKey, tenta descriptografar corretamente
             if ($mediaKey) {
-                Log::info('Tentando descriptografar imagem com mediaKey', [
-                    'tamanho_antes' => strlen($imageContent),
-                    'mediaKey_size' => strlen($mediaKey)
-                ]);
-                
-                $descriptografado = $this->descriptografarMidiaWhatsApp($imageContent, $mediaKey);
-                
-                if ($descriptografado !== null) {
-                    // Descriptografia bem-sucedida
-                    $imageContent = $descriptografado;
-                    $descriptionStatus = 'sucesso';
+                $dec = $this->descriptografarMidiaWhatsApp($bin, $mediaKey, 'image');
+                if ($dec !== null) {
+                    $bin = $dec;
                     Log::info('Imagem descriptografada com sucesso', [
-                        'tamanho_apos' => strlen($imageContent),
-                        'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
+                        'tamanho_apos' => strlen($bin),
+                        'primeiros_bytes' => bin2hex(substr($bin, 0, 16))
                     ]);
                 } else {
-                    // Falha na descriptografia - tenta usar o arquivo como está
-                    // (pode ser que não esteja realmente criptografado)
-                    $descriptionStatus = 'falha_mas_continuando';
-                    Log::warning('Falha na descriptografia, tentando usar arquivo original', [
-                        'tamanho_original' => strlen($imageContent),
-                        'primeiros_bytes' => bin2hex(substr($imageContent, 0, 16))
+                    Log::warning('Falha na descriptografia da imagem, continuando com binário original', [
+                        'primeiros_bytes' => bin2hex(substr($bin, 0, 16))
                     ]);
-                    // Continua com o arquivo original
                 }
             }
 
-            $imageData = $imageContent;
-            $fileSize = strlen($imageData);
-
-            if ($fileSize > $this->maxFileSize) {
-                throw new Exception("Imagem muito grande: {$fileSize} bytes (máximo {$this->maxFileSize})");
-            }
-            
-            // Valida se a imagem é realmente um arquivo de imagem válido
-            // Verifica magic bytes do arquivo
-            if (!$this->validarFormatoImagem($imageData, $mimetype)) {
-                Log::warning('Arquivo de imagem inválido ou corrompido após descriptografia', [
+            // Validar formato real (corrigido)
+            if (!$this->validarFormatoImagem($bin, $mimetype)) {
+                Log::warning('Arquivo de imagem parece inválido/corrompido', [
                     'mimetype' => $mimetype,
-                    'tamanho' => $fileSize,
-                    'primeiros_bytes' => bin2hex(substr($imageData, 0, 16)),
-                    'descriptografado' => $mediaKey ? 'sim' : 'não'
+                    'tamanho' => strlen($bin),
+                    'head12_hex' => bin2hex(substr($bin, 0, 12)),
                 ]);
-                // Continua mesmo assim, pode ser arquivo válido mas magic bytes diferente
+                // continua mesmo assim
             }
 
-            // Armazena arquivo localmente
-            $filename = uniqid('img_') . '.' . $this->getExtensao($mimetype);
+            $filename    = uniqid('img_') . '.' . $this->getExtensao($mimetype);
             $caminhoLocal = "{$this->mediaPath}/images/{$filename}";
-            Storage::disk($this->mediaDisk)->put($caminhoLocal, $imageData);
+            Storage::disk($this->mediaDisk)->put($caminhoLocal, $bin);
 
-            // Analisa com OpenAI Vision (passa caminho local, não URL temporária)
             $descricao = $this->analisarImagemComOpenAI($caminhoLocal);
-
-            Log::info('Imagem processada com sucesso', [
-                'arquivo' => $caminhoLocal,
-                'tamanho' => $fileSize,
-                'mime' => $mimetype,
-                'descricao_chars' => strlen($descricao)
-            ]);
 
             return [
                 'success' => true,
@@ -197,94 +125,66 @@ class MediaProcessor
                 'conteudo_extraido' => $descricao,
                 'arquivo_local' => $caminhoLocal,
                 'metadados' => [
-                    'tamanho_bytes' => $fileSize,
+                    'tamanho_bytes' => strlen($bin),
                     'mime_type' => $mimetype,
                     'url_original' => $url
                 ]
             ];
         } catch (Exception $e) {
-            Log::error('Erro ao processar imagem', [
-                'url' => $url,
-                'erro' => $e->getMessage()
-            ]);
-            return [
-                'success' => false,
-                'tipo_midia' => 'image',
-                'erro' => $e->getMessage()
-            ];
+            Log::error('Erro ao processar imagem', ['url' => $url, 'erro' => $e->getMessage()]);
+            return ['success' => false, 'tipo_midia' => 'image', 'erro' => $e->getMessage()];
         }
     }
 
-    /**
-     * Processa documento (PDF, DOCX, TXT, CSV)
-     * Extrai texto ou analisa com IA
-     */
     private function processarDocumento(array $docData): array
     {
-        $url = $docData['url'] ?? null;
+        $url      = $docData['url'] ?? null;
         $filename = $docData['filename'] ?? 'documento';
         $mimetype = $docData['mimetype'] ?? 'application/pdf';
+        $mediaKey = $docData['mediaKey'] ?? null;
 
         if (!$url) {
-            return [
-                'success' => false,
-                'tipo_midia' => 'document',
-                'erro' => 'URL do documento não fornecida'
-            ];
+            return ['success' => false, 'tipo_midia' => 'document', 'erro' => 'URL do documento não fornecida'];
         }
 
         try {
-            // Baixa documento com curl direto
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            
-            $conteudo = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-            
-            if ($httpCode !== 200 || !$conteudo) {
-                throw new Exception("Falha ao baixar documento: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
+            $bin = $this->baixarComCurl($url);
+
+            if (strlen($bin) > $this->maxFileSize) {
+                throw new Exception("Documento muito grande: " . strlen($bin) . " bytes (máximo {$this->maxFileSize})");
             }
 
-            $fileSize = strlen($conteudo);
-
-            if ($fileSize > $this->maxFileSize) {
-                throw new Exception("Documento muito grande: {$fileSize} bytes (máximo {$this->maxFileSize})");
+            // Muitos providers também mandam document criptografado
+            if ($mediaKey) {
+                $dec = $this->descriptografarMidiaWhatsApp($bin, $mediaKey, 'document');
+                if ($dec !== null) {
+                    $bin = $dec;
+                    Log::info('Documento descriptografado com sucesso', [
+                        'tamanho_apos' => strlen($bin),
+                        'primeiros_bytes' => bin2hex(substr($bin, 0, 16))
+                    ]);
+                } else {
+                    Log::warning('Falha na descriptografia do documento, continuando com binário original', [
+                        'primeiros_bytes' => bin2hex(substr($bin, 0, 16))
+                    ]);
+                }
             }
 
-            // Processa baseado no tipo
-            if (in_array($mimetype, self::SUPPORTED_PDF_TYPES)) {
-                $textoExtraido = $this->extrairTextoPDF($conteudo);
+            if (in_array($mimetype, self::SUPPORTED_PDF_TYPES, true)) {
+                $textoExtraido = $this->extrairTextoPDF($bin);
                 $tipoEspecifico = 'pdf';
-            } elseif (in_array($mimetype, self::SUPPORTED_DOC_TYPES)) {
-                $textoExtraido = $this->extrairTextoDocumento($conteudo, $mimetype);
+            } elseif (in_array($mimetype, self::SUPPORTED_DOC_TYPES, true)) {
+                $textoExtraido = $this->extrairTextoDocumento($bin, $mimetype);
                 $tipoEspecifico = 'document';
             } else {
                 $textoExtraido = "[Tipo de documento não suportado para extração: $mimetype]";
                 $tipoEspecifico = 'document';
             }
 
-            // Armazena arquivo
             $ext = pathinfo($filename, PATHINFO_EXTENSION) ?: $this->getExtensao($mimetype);
             $nomeArmazenado = uniqid('doc_') . '.' . $ext;
             $caminhoLocal = "{$this->mediaPath}/documents/{$nomeArmazenado}";
-            Storage::disk($this->mediaDisk)->put($caminhoLocal, $conteudo);
-
-            Log::info('Documento processado com sucesso', [
-                'arquivo' => $caminhoLocal,
-                'tamanho' => $fileSize,
-                'mime' => $mimetype,
-                'tipo' => $tipoEspecifico,
-                'texto_extraido_chars' => strlen($textoExtraido)
-            ]);
+            Storage::disk($this->mediaDisk)->put($caminhoLocal, $bin);
 
             return [
                 'success' => true,
@@ -292,7 +192,7 @@ class MediaProcessor
                 'conteudo_extraido' => $textoExtraido,
                 'arquivo_local' => $caminhoLocal,
                 'metadados' => [
-                    'tamanho_bytes' => $fileSize,
+                    'tamanho_bytes' => strlen($bin),
                     'mime_type' => $mimetype,
                     'nome_original' => $filename,
                     'url_original' => $url
@@ -304,67 +204,43 @@ class MediaProcessor
                 'filename' => $filename,
                 'erro' => $e->getMessage()
             ]);
-            return [
-                'success' => false,
-                'tipo_midia' => 'document',
-                'erro' => $e->getMessage()
-            ];
+
+            return ['success' => false, 'tipo_midia' => 'document', 'erro' => $e->getMessage()];
         }
     }
 
-    /**
-     * Processa áudio (retorna informação de que recebeu)
-     * Pode ser estendido para usar Whisper API da OpenAI
-     */
     private function processarAudio(array $audioData): array
     {
-        $url = $audioData['url'] ?? null;
+        $url      = $audioData['url'] ?? null;
         $mimetype = $audioData['mimetype'] ?? 'audio/ogg';
+        $mediaKey = $audioData['mediaKey'] ?? null;
 
         if (!$url) {
-            return [
-                'success' => false,
-                'tipo_midia' => 'audio',
-                'erro' => 'URL do áudio não fornecida'
-            ];
+            return ['success' => false, 'tipo_midia' => 'audio', 'erro' => 'URL do áudio não fornecida'];
         }
 
         try {
-            // Baixa áudio com curl direto
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            
-            $conteudo = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-            
-            if ($httpCode !== 200 || !$conteudo) {
-                throw new Exception("Falha ao baixar áudio: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
+            $bin = $this->baixarComCurl($url);
+
+            if (strlen($bin) > $this->maxFileSize) {
+                throw new Exception("Áudio muito grande: " . strlen($bin) . " bytes (máximo {$this->maxFileSize})");
             }
 
-            $fileSize = strlen($conteudo);
+            if ($mediaKey) {
+                $dec = $this->descriptografarMidiaWhatsApp($bin, $mediaKey, 'audio');
+                if ($dec !== null) {
+                    $bin = $dec;
+                    Log::info('Áudio descriptografado com sucesso', [
+                        'tamanho_apos' => strlen($bin),
+                    ]);
+                }
+            }
 
-            // Armazena arquivo
             $filename = uniqid('audio_') . '.' . $this->getExtensao($mimetype);
             $caminhoLocal = "{$this->mediaPath}/audio/{$filename}";
-            Storage::disk($this->mediaDisk)->put($caminhoLocal, $conteudo);
+            Storage::disk($this->mediaDisk)->put($caminhoLocal, $bin);
 
-            // TODO: Integrar Whisper API para transcrição
-            $descricao = "🎙️ Arquivo de áudio recebido ({$fileSize} bytes). Transcrição automática em desenvolvimento.";
-
-            Log::info('Áudio processado com sucesso', [
-                'arquivo' => $caminhoLocal,
-                'tamanho' => $fileSize,
-                'mime' => $mimetype
-            ]);
+            $descricao = "🎙️ Arquivo de áudio recebido (" . strlen($bin) . " bytes). Transcrição automática em desenvolvimento.";
 
             return [
                 'success' => true,
@@ -372,30 +248,17 @@ class MediaProcessor
                 'conteudo_extraido' => $descricao,
                 'arquivo_local' => $caminhoLocal,
                 'metadados' => [
-                    'tamanho_bytes' => $fileSize,
+                    'tamanho_bytes' => strlen($bin),
                     'mime_type' => $mimetype,
                     'url_original' => $url
                 ]
             ];
         } catch (Exception $e) {
-            Log::error('Erro ao processar áudio', [
-                'url' => $url,
-                'erro' => $e->getMessage()
-            ]);
-            return [
-                'success' => false,
-                'tipo_midia' => 'audio',
-                'erro' => $e->getMessage()
-            ];
+            Log::error('Erro ao processar áudio', ['url' => $url, 'erro' => $e->getMessage()]);
+            return ['success' => false, 'tipo_midia' => 'audio', 'erro' => $e->getMessage()];
         }
     }
 
-    /**
-     * Analisa imagem usando OpenAI Vision API
-     * Retorna descrição estruturada do conteúdo visual
-     * 
-     * Nota: Usa base64 em vez de URL porque URLs do WhatsApp expiram rapidamente
-     */
     public function analisarImagemComOpenAI(string $imagemLocalPath): string
     {
         if (!$this->openaiKey) {
@@ -403,13 +266,11 @@ class MediaProcessor
         }
 
         try {
-            // Lê o arquivo armazenado localmente (já não está mais no WhatsApp)
             $conteudoImagem = Storage::disk($this->mediaDisk)->get($imagemLocalPath);
             if (!$conteudoImagem) {
                 return "📷 Imagem recebida. Arquivo não encontrado para análise.";
             }
 
-            // Detecta MIME type primeiro
             $extensao = strtolower(pathinfo($imagemLocalPath, PATHINFO_EXTENSION));
             $mimeMap = [
                 'jpg' => 'image/jpeg',
@@ -419,35 +280,20 @@ class MediaProcessor
                 'webp' => 'image/webp'
             ];
             $mediaType = $mimeMap[$extensao] ?? 'image/jpeg';
-            
-            // Valida tamanho do arquivo para base64 (OpenAI tem limite de ~20MB)
-            $fileSize = strlen($conteudoImagem);
-            $maxSize = 20 * 1024 * 1024; // 20MB
-            
-            if ($fileSize > $maxSize) {
-                Log::warning('Imagem muito grande para análise', [
-                    'caminho' => $imagemLocalPath,
-                    'tamanho' => $fileSize,
-                    'limite' => $maxSize
-                ]);
-                return "📷 Imagem recebida. Arquivo muito grande para análise (máximo 20MB).";
+
+            // limite do binário antes do base64 (base64 aumenta ~33%)
+            $maxBin = 14 * 1024 * 1024; // seguro na prática
+            if (strlen($conteudoImagem) > $maxBin) {
+                return "📷 Imagem recebida. Arquivo muito grande para análise (reduza a resolução).";
             }
 
-            // Converte para base64 (mais confiável que URL temporária)
             $base64 = base64_encode($conteudoImagem);
-            
-            // Valida se base64 foi gerado corretamente
-            if (empty($base64) || strlen($base64) < 100) {
-                Log::error('Base64 inválido gerado', [
-                    'caminho' => $imagemLocalPath,
-                    'tamanho_original' => $fileSize,
-                    'tamanho_base64' => strlen($base64)
-                ]);
+            if (!$base64 || strlen($base64) < 100) {
                 return "📷 Imagem recebida. Erro ao processar arquivo para análise.";
             }
 
             $response = Http::withToken($this->openaiKey)
-                ->timeout(30)
+                ->timeout(45)
                 ->post('https://api.openai.com/v1/chat/completions', [
                     'model' => 'gpt-4o-mini',
                     'messages' => [
@@ -456,7 +302,7 @@ class MediaProcessor
                             'content' => [
                                 [
                                     'type' => 'text',
-                                    'text' => 'Analise esta imagem e forneça uma descrição detalhada do conteúdo. Identifique: objetos principais, cores, texto visível, contexto geral. Seja conciso mas informativo.'
+                                    'text' => 'Analise esta imagem e descreva de forma objetiva: objetos, texto visível, contexto e detalhes relevantes.'
                                 ],
                                 [
                                     'type' => 'image_url',
@@ -479,226 +325,274 @@ class MediaProcessor
                 return "📷 Imagem recebida. Análise de conteúdo não disponível no momento.";
             }
 
-            $descricao = $response['choices'][0]['message']['content'] ?? null;
+            $descricao = data_get($response->json(), 'choices.0.message.content');
             if (!$descricao) {
                 return "📷 Imagem recebida. Não foi possível gerar descrição.";
             }
 
             return "📷 **Análise de Imagem:**\n\n" . $descricao;
         } catch (Exception $e) {
-            Log::error('Erro ao chamar OpenAI Vision', [
-                'erro' => $e->getMessage()
-            ]);
+            Log::error('Erro ao chamar OpenAI Vision', ['erro' => $e->getMessage()]);
             return "📷 Imagem recebida. Erro ao processar com IA: " . $e->getMessage();
         }
     }
 
-    /**
-     * Extrai texto de PDF
-     * Usa a biblioteca spatie/pdf-to-text ou simplesmente retorna info do arquivo
-     */
     private function extrairTextoPDF(string $conteudoPDF): string
     {
         try {
-            // Tenta usar biblioteca se disponível
-            if (class_exists('Spatie\PdfToText\Pdf')) {
-                $tempFile = tempnam(sys_get_temp_dir(), 'pdf_');
-                file_put_contents($tempFile, $conteudoPDF);
-                
-                $texto = (new \Spatie\PdfToText\Pdf($tempFile))
-                    ->setPdf($tempFile)
-                    ->text();
-                
-                unlink($tempFile);
-                
-                return trim($texto) ?: "📄 PDF recebido mas sem texto extraível.";
-            }
-        } catch (Exception $e) {
-            Log::debug('Biblioteca PDF-to-Text não disponível', ['erro' => $e->getMessage()]);
-        }
+            // Tentar usar Spatie/pdftotext primeiro
+            if (class_exists(\Spatie\PdfToText\Pdf::class)) {
+                try {
+                    $tempFile = tempnam(sys_get_temp_dir(), 'pdf_');
+                    file_put_contents($tempFile, $conteudoPDF);
 
-        // Fallback: retorna informação genérica
-        return "📄 Arquivo PDF recebido com sucesso. Para processar conteúdo, instale a biblioteca spatie/pdf-to-text";
+                    // Spatie depende do binário pdftotext instalado
+                    $texto = \Spatie\PdfToText\Pdf::getText($tempFile);
+
+                    @unlink($tempFile);
+                    $texto = trim((string) $texto);
+
+                    if ($texto !== '') {
+                        return $texto;
+                    }
+                } catch (Exception $e) {
+                    Log::warning('pdftotext não disponível, usando extração alternativa', [
+                        'erro' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Fallback: extração básica de texto do PDF
+            return $this->extrairTextoPDFFallback($conteudoPDF);
+        } catch (Exception $e) {
+            Log::error('Erro ao extrair texto do PDF', ['erro' => $e->getMessage()]);
+            return "📄 Erro ao processar PDF: " . $e->getMessage();
+        }
     }
 
-    /**
-     * Extrai texto de documentos (DOCX, TXT, CSV)
-     * Suporte básico para formatos simples
-     */
+    private function extrairTextoPDFFallback(string $conteudoPDF): string
+    {
+        /**
+         * Extração básica de PDF sem pdftotext
+         * Procura por streams de texto no PDF
+         */
+        try {
+            // Remover caracteres nulos e não-imprimíveis
+            $pdf = str_replace(["\x00", "\r\n"], ["", " "], $conteudoPDF);
+            
+            // Procurar por padrões de texto em streams PDF
+            $texto = '';
+            
+            // Padrão 1: Texto entre parênteses em BT/ET (text objects)
+            if (preg_match_all('/BT\s+(.*?)\s+ET/s', $pdf, $matches)) {
+                foreach ($matches[1] as $match) {
+                    // Extrair strings
+                    if (preg_match_all('/\((.*?)\)\s*Tj/', $match, $strings)) {
+                        foreach ($strings[1] as $str) {
+                            // Decodificar escape sequences básicos
+                            $str = str_replace(['\\(', '\\)', '\\\\'], ['(', ')', '\\'], $str);
+                            $texto .= $str . " ";
+                        }
+                    }
+                }
+            }
+            
+            // Padrão 2: Texto em arrays
+            if (preg_match_all('/\[(.*?)\]\s*TJ/', $pdf, $matches)) {
+                foreach ($matches[1] as $match) {
+                    if (preg_match_all('/\((.*?)\)/', $match, $strings)) {
+                        foreach ($strings[1] as $str) {
+                            $str = str_replace(['\\(', '\\)', '\\\\'], ['(', ')', '\\'], $str);
+                            $texto .= $str . " ";
+                        }
+                    }
+                }
+            }
+            
+            // Limpeza básica
+            $texto = preg_replace('/\s+/', ' ', $texto); // Remover espaços múltiplos
+            $texto = trim($texto);
+            
+            if (strlen($texto) > 20) {
+                return "📄 **Conteúdo do PDF:**\n\n" . substr($texto, 0, 1000) . 
+                       (strlen($texto) > 1000 ? "\n\n...(conteúdo truncado)" : "");
+            }
+            
+            return "📄 PDF recebido mas com pouco texto extraível (pode ser PDF com imagens).";
+        } catch (Exception $e) {
+            Log::warning('Erro na extração fallback de PDF', ['erro' => $e->getMessage()]);
+            return "📄 PDF recebido com sucesso (não foi possível extrair texto completo - pode ser PDF com imagens)";
+        }
+    }
+
     private function extrairTextoDocumento(string $conteudo, string $mimetype): string
     {
-        // TXT simples
         if ($mimetype === 'text/plain') {
-            $texto = mb_convert_encoding($conteudo, 'UTF-8', 'UTF-8,ISO-8859-1');
+            $texto = mb_convert_encoding($conteudo, 'UTF-8', 'UTF-8,ISO-8859-1,Windows-1252');
             return trim($texto) ?: "Arquivo de texto vazio";
         }
 
-        // CSV
         if ($mimetype === 'text/csv') {
-            $linhas = explode("\n", $conteudo);
+            $linhas = preg_split("/\r\n|\n|\r/", $conteudo);
             $preview = implode("\n", array_slice($linhas, 0, 10));
-            return "📊 **Arquivo CSV recebido:**\n\n" . $preview . 
-                   (count($linhas) > 10 ? "\n...\n(+". (count($linhas) - 10) . " linhas)" : "");
+            $resto = max(0, count($linhas) - 10);
+
+            return "📊 **Arquivo CSV recebido:**\n\n" . $preview . ($resto > 0 ? "\n...\n(+{$resto} linhas)" : "");
         }
 
-        // DOCX (formato ZIP com XML)
-        if (strpos($mimetype, 'wordprocessingml') !== false) {
+        if (str_contains($mimetype, 'wordprocessingml')) {
             try {
                 $zip = new \ZipArchive();
                 $tempFile = tempnam(sys_get_temp_dir(), 'docx_');
                 file_put_contents($tempFile, $conteudo);
-                
+
                 if ($zip->open($tempFile) === true) {
-                    $xmlContent = $zip->getFromName('word/document.xml');
+                    $xml = $zip->getFromName('word/document.xml');
                     $zip->close();
-                    
-                    // Remove tags XML, mantém apenas texto
-                    $texto = preg_replace('/<[^>]*>/', ' ', $xmlContent);
-                    $texto = preg_replace('/\s+/', ' ', $texto);
-                    
-                    unlink($tempFile);
-                    return trim($texto) ?: "📄 Documento DOCX vazio";
+                    @unlink($tempFile);
+
+                    if ($xml) {
+                        // melhora: preserva quebras básicas
+                        $xml = str_replace(['</w:p>', '</w:tr>'], ["\n", "\n"], $xml);
+                        $texto = strip_tags($xml);
+                        $texto = preg_replace('/\s+/', ' ', $texto);
+                        $texto = trim($texto);
+
+                        return $texto !== '' ? $texto : "📄 Documento DOCX vazio";
+                    }
                 }
-                unlink($tempFile);
+
+                @unlink($tempFile);
             } catch (Exception $e) {
-                Log::debug('Erro ao processar DOCX', ['erro' => $e->getMessage()]);
+                Log::warning('Erro ao processar DOCX', ['erro' => $e->getMessage()]);
             }
-            return "📄 Arquivo DOCX recebido. Extração de conteúdo requer biblioteca adicional.";
+
+            return "📄 Arquivo DOCX recebido. Para extração robusta, use phpoffice/phpword.";
         }
 
-        // XLSX
-        if (strpos($mimetype, 'spreadsheetml') !== false) {
-            return "📊 Arquivo Excel (XLSX) recebido. Processamento requer biblioteca PHPOffice.";
+        if (str_contains($mimetype, 'spreadsheetml')) {
+            return "📊 Arquivo Excel (XLSX) recebido. Processamento requer PHPOffice/PhpSpreadsheet.";
         }
 
         return "📄 Tipo de documento recebido: $mimetype";
     }
 
     /**
-     * Obtém extensão de arquivo baseado no MIME type
+     * ✅ Download robusto com cURL (SSL controlável via env WHATSAPP_VERIFY_SSL)
      */
-    private function getExtensao(string $mimetype): string
+    private function baixarComCurl(string $url): string
     {
-        $map = [
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif',
-            'image/webp' => 'webp',
-            'application/pdf' => 'pdf',
-            'text/plain' => 'txt',
-            'text/csv' => 'csv',
-            'application/msword' => 'doc',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-            'application/vnd.ms-excel' => 'xls',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
-            'audio/ogg' => 'ogg',
-            'audio/mpeg' => 'mp3',
-        ];
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 45,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_USERAGENT => 'Mozilla/5.0',
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => $this->verifySsl,
+            CURLOPT_SSL_VERIFYHOST => $this->verifySsl ? 2 : 0,
+        ]);
 
-        return $map[$mimetype] ?? 'bin';
+        $data = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || $data === false || $data === '') {
+            throw new Exception("Falha ao baixar arquivo: HTTP {$httpCode}" . ($curlError ? " ({$curlError})" : ""));
+        }
+
+        return $data;
     }
 
     /**
-     * Descriptografa arquivo de mídia do WhatsApp usando mediaKey
-     * WhatsApp envia arquivos criptografados que precisam ser descriptografados
-     * Algoritmo: AES-256-CBC com derivação de chave via HKDF
+     * ✅ Validação correta de magic bytes (inclui WEBP correto)
      */
-    private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey): ?string
+    private function validarFormatoImagem(string $conteudo, string $mimetype): bool
+    {
+        if ($conteudo === '') return false;
+
+        $head12 = substr($conteudo, 0, 12);
+
+        return match ($mimetype) {
+            'image/jpeg' => substr($head12, 0, 3) === "\xFF\xD8\xFF",
+            'image/png'  => substr($head12, 0, 4) === "\x89PNG",
+            'image/gif'  => substr($head12, 0, 4) === "GIF8",
+            'image/webp' => substr($head12, 0, 4) === "RIFF" && substr($head12, 8, 4) === "WEBP",
+            default      => true,
+        };
+    }
+
+    /**
+     * ✅ Descriptografia WhatsApp corrigida:
+     * - Corrige chamada do hash_hkdf (sua ordem estava errada)
+     * - Info correto por tipo (Image/Document/Audio)
+     * - Tenta MAC 10 bytes e 32 bytes (fallback)
+     */
+    private function descriptografarMidiaWhatsApp(string $conteudoCriptografado, string $mediaKey, string $tipo): ?string
     {
         try {
-            // Decode mediaKey (base64)
-            $mediaKeyBytes = base64_decode($mediaKey);
-            
+            $mediaKeyBytes = base64_decode($mediaKey, true);
             if ($mediaKeyBytes === false || strlen($mediaKeyBytes) !== 32) {
-                Log::error('MediaKey inválido (deve ser 32 bytes)', [
-                    'mediaKey_length' => strlen($mediaKey),
-                    'bytes_length' => $mediaKeyBytes ? strlen($mediaKeyBytes) : 'null'
+                Log::error('MediaKey inválido (deve virar 32 bytes)', [
+                    'mediaKey_len' => strlen($mediaKey),
+                    'decoded_len' => $mediaKeyBytes ? strlen($mediaKeyBytes) : null,
                 ]);
                 return null;
             }
-            
-            Log::debug('MediaKey decodificado', [
-                'hex' => bin2hex($mediaKeyBytes)
-            ]);
-            
-            // Remove últimos 10 bytes (HMAC de verificação)
-            $conteudoSemHmac = substr($conteudoCriptografado, 0, -10);
-            
-            // HKDF(hash_alg, input_key, salt, info, length)
-            // Para WhatsApp Media:
-            // - hash: sha256
-            // - input_key: mediaKey (32 bytes)
-            // - salt: empty
-            // - info: "WhatsApp Image Keys"
-            // - length: 112 (16 bytes IV + 32 bytes key + 64 bytes extra)
-            
+
+            $info = match ($tipo) {
+                'image'    => 'WhatsApp Image Keys',
+                'document' => 'WhatsApp Document Keys',
+                'audio'    => 'WhatsApp Audio Keys',
+                default    => 'WhatsApp Image Keys',
+            };
+
+            // 112 bytes: IV (16) + cipherKey (32) + macKey (32) + refKey (32)
             if (function_exists('hash_hkdf')) {
-                // PHP 7.1.2+
-                $expandedKey = hash_hkdf('sha256', $mediaKeyBytes, '', 'WhatsApp Image Keys', 112);
-                Log::debug('HKDF expansion realizado', ['length' => strlen($expandedKey)]);
+                // ✅ assinatura correta: hash_hkdf(algo, key, length, info, salt)
+                $expanded = hash_hkdf('sha256', $mediaKeyBytes, 112, $info, '');
             } else {
-                // Fallback: HMAC-based key derivation (não ideal, mas compatível)
-                $hmac1 = hash_hmac('sha256', chr(1) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
-                $hmac2 = hash_hmac('sha256', $hmac1 . chr(2) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
-                $hmac3 = hash_hmac('sha256', $hmac2 . chr(3) . 'WhatsApp Image Keys', $mediaKeyBytes, true);
-                $expandedKey = $hmac1 . $hmac2 . substr($hmac3, 0, 16);
-                Log::debug('HMAC-based expansion realizado', ['length' => strlen($expandedKey)]);
+                // fallback simples (não ideal)
+                $t = hash_hmac('sha256', $info . "\x01", $mediaKeyBytes, true);
+                $expanded = $t;
+                while (strlen($expanded) < 112) {
+                    $t = hash_hmac('sha256', $t . $info . chr((int)(strlen($expanded)/32)+1), $mediaKeyBytes, true);
+                    $expanded .= $t;
+                }
+                $expanded = substr($expanded, 0, 112);
             }
-            
-            // Derivar IV e Cipher Key
-            // Primeiros 16 bytes = IV
-            // Bytes 16-47 = Cipher Key
-            $iv = substr($expandedKey, 0, 16);
-            $cipherKey = substr($expandedKey, 16, 32);
-            
-            Log::debug('Chave e IV derivados', [
-                'iv_hex' => bin2hex($iv),
-                'key_hex' => bin2hex($cipherKey),
-                'conteudo_tamanho_sem_hmac' => strlen($conteudoSemHmac)
-            ]);
-            
-            // Descriptografa usando AES-256-CBC
-            $descriptografado = openssl_decrypt(
-                $conteudoSemHmac,
-                'AES-256-CBC',
-                $cipherKey,
-                OPENSSL_RAW_DATA,
-                $iv
-            );
-            
-            if ($descriptografado === false) {
-                $erro = openssl_error_string();
-                Log::error('Falha na descriptografia AES-256-CBC', [
-                    'openssl_error' => $erro,
-                    'key_len' => strlen($cipherKey),
-                    'iv_len' => strlen($iv),
-                    'conteudo_len' => strlen($conteudoSemHmac)
-                ]);
-                return null;
+
+            $iv        = substr($expanded, 0, 16);
+            $cipherKey = substr($expanded, 16, 32);
+            $macKey    = substr($expanded, 48, 32);
+
+            // Tenta remover MAC (alguns providers usam 10 bytes, outros 32)
+            foreach ([10, 32] as $macLen) {
+                if (strlen($conteudoCriptografado) <= $macLen + 16) {
+                    continue;
+                }
+
+                $cipherPlus = substr($conteudoCriptografado, 0, -$macLen);
+                $mac        = substr($conteudoCriptografado, -$macLen);
+
+                // Se for 32 bytes, valida HMAC-SHA256 (melhor cenário)
+                if ($macLen === 32) {
+                    $calc = hash_hmac('sha256', $iv . $cipherPlus, $macKey, true);
+                    if (!hash_equals($calc, $mac)) {
+                        continue; // mac inválido, tenta próximo
+                    }
+                }
+
+                $plain = openssl_decrypt($cipherPlus, 'AES-256-CBC', $cipherKey, OPENSSL_RAW_DATA, $iv);
+                if ($plain !== false && $plain !== '') {
+                    return $plain;
+                }
             }
-            
-            // Validar se descriptografia foi bem-sucedida
-            // Verificar magic bytes
-            $magicBytes = bin2hex(substr($descriptografado, 0, 3));
-            Log::debug('Arquivo descriptografado', [
-                'magic_bytes' => $magicBytes,
-                'tamanho' => strlen($descriptografado),
-                'primeiros_16_bytes' => bin2hex(substr($descriptografado, 0, 16))
-            ]);
-            
-            // Se magic bytes não parecem válidos para imagem JPEG (FFD8FF)
-            // pode ser que não estava realmente criptografado
-            // ou que o algoritmo está errado
-            if ($magicBytes !== 'ffd8ff') {
-                Log::warning('Magic bytes não correspondem a JPEG válido', [
-                    'encontrado' => $magicBytes,
-                    'esperado' => 'ffd8ff'
-                ]);
-                // Não retorna null, continua de qualquer forma
-            }
-            
-            return $descriptografado;
-        } catch (\Exception $e) {
+
+            return null;
+        } catch (Exception $e) {
             Log::error('Erro ao descriptografar mídia WhatsApp', [
                 'erro' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -706,49 +600,6 @@ class MediaProcessor
             return null;
         }
     }
-
-    /**
-     * Valida se o conteúdo é realmente uma imagem verificando magic bytes
-     */
-    private function validarFormatoImagem(string $conteudo, string $mimetype): bool
-    {
-        if (empty($conteudo)) {
-            return false;
-        }
-
-        // Magic bytes para diferentes formatos de imagem
-        $magicBytes = [
-            'image/jpeg' => [
-                pack('H*', 'FFD8FF'),
-                pack('H*', 'FFD8FF')
-            ],
-            'image/png' => [
-                pack('H*', '89504E47')
-            ],
-            'image/gif' => [
-                pack('H*', '47494638')
-            ],
-            'image/webp' => [
-                pack('H*', '52494646'),
-                pack('H*', '57454250')
-            ]
-        ];
-
-        if (!isset($magicBytes[$mimetype])) {
-            return true; // Tipo desconhecido, passa
-        }
-
-        $bytes = substr($conteudo, 0, 4);
-        
-        foreach ($magicBytes[$mimetype] as $magic) {
-            if (strpos($bytes, $magic) === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     /**
      * Limpa arquivos antigos (mais de X dias)
@@ -781,5 +632,29 @@ class MediaProcessor
         ]);
 
         return ['removidos' => $removidos, 'erro' => null];
+    }
+
+    /**
+     * Obter extensão do arquivo baseado no MIME type
+     */
+    private function getExtensao($mimetype)
+    {
+        $mimeToExt = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'application/pdf' => 'pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/msword' => 'doc',
+            'audio/mpeg' => 'mp3',
+            'audio/ogg' => 'ogg',
+            'audio/wav' => 'wav',
+            'video/mp4' => 'mp4',
+            'video/quicktime' => 'mov',
+        ];
+
+        return $mimeToExt[$mimetype] ?? 'bin';
     }
 }

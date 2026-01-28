@@ -1,12 +1,12 @@
-# ⚙️ Configuração Avançada do MediaProcessor
+﻿# âš™ï¸ ConfiguraÃ§Ã£o AvanÃ§ada do MediaProcessor
 
-## Variáveis de Ambiente
+## VariÃ¡veis de Ambiente
 
 Adicione ao seu arquivo `.env`:
 
 ```env
 # OpenAI Configuration
-OPENAI_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+OPENAI_KEY=YOUR_OPENAI_KEY
 OPENAI_MODEL=gpt-4o-mini
 
 # Media Processor Settings
@@ -19,7 +19,7 @@ MEDIA_DOWNLOAD_TIMEOUT=30                 # Timeout em segundos
 PDF_EXTRACTION_ENABLED=true
 PDF_OCR_ENABLED=false                     # Futuro: Tesseract
 
-# Processamento de Áudio
+# Processamento de Ãudio
 AUDIO_TRANSCRIPTION_ENABLED=false         # Futuro: Whisper API
 AUDIO_MAX_DURATION=300                    # 5 minutos
 
@@ -28,7 +28,7 @@ LOG_LEVEL=debug
 LOG_CHANNEL=stack
 ```
 
-## Customização do MediaProcessor
+## CustomizaÃ§Ã£o do MediaProcessor
 
 ### 1. Aumentar Limite de Tamanho
 
@@ -56,28 +56,28 @@ private function analisarImagemComOpenAI(string $imageUrl): string
                     'content' => [
                         [
                             'type' => 'text',
-                            'text' => 'SEU PROMPT CUSTOMIZADO AQUI' // ← EDITE AQUI
+                            'text' => 'SEU PROMPT CUSTOMIZADO AQUI' // â† EDITE AQUI
                         ],
-                        // ... resto do código
+                        // ... resto do cÃ³digo
 ```
 
 **Exemplos de prompts customizados:**
 
 ```php
-// Para análise de imóvel
-'text' => 'Você é especialista em imóveis. Analise esta foto e identifique: '
-         . 'condição geral, número aproximado de cômodos, acabamento, '
-         . 'características positivas e negativas. Seja técnico mas conciso.',
+// Para anÃ¡lise de imÃ³vel
+'text' => 'VocÃª Ã© especialista em imÃ³veis. Analise esta foto e identifique: '
+         . 'condiÃ§Ã£o geral, nÃºmero aproximado de cÃ´modos, acabamento, '
+         . 'caracterÃ­sticas positivas e negativas. Seja tÃ©cnico mas conciso.',
 
-// Para análise de documentos
-'text' => 'Você é advogado especialista. Analise este documento e identifique: '
+// Para anÃ¡lise de documentos
+'text' => 'VocÃª Ã© advogado especialista. Analise este documento e identifique: '
          . 'partes envolvidas, termos principais, valores, prazos, '
          . 'riscos legais. Destaque os 5 pontos mais importantes.',
 
-// Para análise de plantas
-'text' => 'Você é arquiteto. Analisando esta planta: '
+// Para anÃ¡lise de plantas
+'text' => 'VocÃª Ã© arquiteto. Analisando esta planta: '
          . 'identifique metragem aproximada, layout, fluxos, problemas. '
-         . 'Descreva em termos técnicos.',
+         . 'Descreva em termos tÃ©cnicos.',
 ```
 
 ### 3. Customizar Formatos Suportados
@@ -89,7 +89,7 @@ const SUPPORTED_IMAGE_TYPES = [
     'image/png',
     'image/gif',
     'image/webp',
-    'image/tiff',  // ← ADICIONE
+    'image/tiff',  // â† ADICIONE
 ];
 
 const SUPPORTED_PDF_TYPES = [
@@ -103,7 +103,7 @@ const SUPPORTED_DOC_TYPES = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'text/plain',
     'text/csv',
-    'application/json',  // ← ADICIONE
+    'application/json',  // â† ADICIONE
 ];
 ```
 
@@ -111,14 +111,14 @@ const SUPPORTED_DOC_TYPES = [
 
 ```php
 // app/Services/MediaProcessor.php
-private $mediaDisk = 's3';         // Usar S3 ao invés de local
-private $mediaPath = 'whatsapp_media/2025-01'; // Organizar por mês
+private $mediaDisk = 's3';         // Usar S3 ao invÃ©s de local
+private $mediaPath = 'whatsapp_media/2025-01'; // Organizar por mÃªs
 
 // Ou via config
 $this->mediaDisk = config('filesystems.default');
 ```
 
-### 5. Adicionar Cache para Análises
+### 5. Adicionar Cache para AnÃ¡lises
 
 ```php
 // app/Services/MediaProcessor.php
@@ -130,14 +130,14 @@ private function analisarImagemComOpenAI(string $imageUrl): string
     
     // Retornar cache se existir (24 horas)
     return Cache::remember($cacheKey, 24*60, function() use ($imageUrl) {
-        // ... fazer análise com OpenAI
+        // ... fazer anÃ¡lise com OpenAI
         $descricao = $response['choices'][0]['message']['content'];
         return $descricao;
     });
 }
 ```
 
-### 6. Adicionar Webhook de Notificação
+### 6. Adicionar Webhook de NotificaÃ§Ã£o
 
 ```php
 // app/Services/MediaProcessor.php
@@ -155,7 +155,7 @@ private function notificarProcessamento(string $clienteId, array $resultado)
 }
 ```
 
-### 7. Integração com Slack/Discord
+### 7. IntegraÃ§Ã£o com Slack/Discord
 
 ```php
 // app/Services/MediaProcessor.php
@@ -166,7 +166,7 @@ private function notificarSlack(string $tipoMidia, string $conteudo)
     }
     
     Http::post(env('SLACK_WEBHOOK_URL'), [
-        'text' => "📄 Arquivo processado: $tipoMidia",
+        'text' => "ðŸ“„ Arquivo processado: $tipoMidia",
         'blocks' => [
             [
                 'type' => 'section',
@@ -180,9 +180,9 @@ private function notificarSlack(string $tipoMidia, string $conteudo)
 }
 ```
 
-## Configuração com Scheduler
+## ConfiguraÃ§Ã£o com Scheduler
 
-### Limpeza Automática de Arquivos
+### Limpeza AutomÃ¡tica de Arquivos
 
 ```php
 // app/Console/Kernel.php
@@ -202,7 +202,7 @@ protected function schedule(Schedule $schedule)
 }
 ```
 
-## Configuração com Queues
+## ConfiguraÃ§Ã£o com Queues
 
 Para processar arquivos grandes em background:
 
@@ -237,13 +237,13 @@ class ProcessMediaJob implements ShouldQueue
 Modificar `ProcessWhatsappMessage.php`:
 
 ```php
-// Dispatch para queue ao invés de processar inline
+// Dispatch para queue ao invÃ©s de processar inline
 ProcessMediaJob::dispatch($msgData, $instance, $remetente)
     ->onConnection('redis')
     ->onQueue('media');
 ```
 
-## Configuração com Redis Cache
+## ConfiguraÃ§Ã£o com Redis Cache
 
 ```php
 // app/Services/MediaProcessor.php
@@ -259,7 +259,7 @@ private function analisarImagemComOpenAI(string $imageUrl): string
         return $cached;
     }
     
-    // Fazer análise...
+    // Fazer anÃ¡lise...
     $resultado = $response['choices'][0]['message']['content'];
     
     // Armazenar em cache por 24 horas
@@ -269,7 +269,7 @@ private function analisarImagemComOpenAI(string $imageUrl): string
 }
 ```
 
-## Configuração com S3 Storage
+## ConfiguraÃ§Ã£o com S3 Storage
 
 ```php
 // .env
@@ -331,12 +331,12 @@ private function processarImagem(array $imageData): array
 // app/Services/MediaProcessor.php
 private function processar(array $msgData): array
 {
-    // Integração Datadog
+    // IntegraÃ§Ã£o Datadog
     \DDTrace\trace_function('MediaProcessor::processar', function() use ($msgData) {
         // ... processamento
     });
     
-    // Ou integração New Relic
+    // Ou integraÃ§Ã£o New Relic
     newrelic_add_custom_metric('media.processed', 1);
     newrelic_add_custom_parameter('media_type', $tipoMidia);
 }
@@ -346,30 +346,30 @@ private function processar(array $msgData): array
 
 ```bash
 #!/bin/bash
-# load_test.sh - Testa processamento com múltiplas requisições
+# load_test.sh - Testa processamento com mÃºltiplas requisiÃ§Ãµes
 
 for i in {1..10}; do
-    echo "Requisição $i"
+    echo "RequisiÃ§Ã£o $i"
     php test_media_webhook.php image &
 done
 
 wait
-echo "Testes concluídos"
+echo "Testes concluÃ­dos"
 ```
 
-## Documentação das Variáveis de Ambiente
+## DocumentaÃ§Ã£o das VariÃ¡veis de Ambiente
 
 ```env
 # ==========================================
 # OPENAI CONFIGURATION
 # ==========================================
-OPENAI_KEY=sk-proj-...                    # Chave da API OpenAI
+OPENAI_KEY=YOUR_OPENAI_KEY                    # Chave da API OpenAI
 OPENAI_MODEL=gpt-4o-mini                  # Modelo a usar (gpt-4o-mini, gpt-4)
 
 # ==========================================
 # MEDIA PROCESSOR CONFIGURATION
 # ==========================================
-MEDIA_MAX_FILE_SIZE=52428800              # Máximo arquivo (bytes)
+MEDIA_MAX_FILE_SIZE=52428800              # MÃ¡ximo arquivo (bytes)
 MEDIA_RETENTION_DAYS=30                   # Dias antes de deletar
 MEDIA_STORAGE_DISK=public                 # Disco (public, s3, etc)
 MEDIA_DOWNLOAD_TIMEOUT=30                 # Timeout download (segundos)
@@ -377,7 +377,7 @@ MEDIA_DOWNLOAD_TIMEOUT=30                 # Timeout download (segundos)
 # ==========================================
 # PDF CONFIGURATION
 # ==========================================
-PDF_EXTRACTION_ENABLED=true               # Habilitar extração
+PDF_EXTRACTION_ENABLED=true               # Habilitar extraÃ§Ã£o
 PDF_LANGUAGE=por                          # Idioma (por, eng, spa)
 
 # ==========================================
@@ -390,10 +390,11 @@ AUDIO_MAX_DURATION=300                    # Max segundos
 # LOGGING & MONITORING
 # ==========================================
 LOG_LEVEL=debug                           # debug|info|warning|error
-MEDIA_WEBHOOK_URL=https://...             # Para notificações
+MEDIA_WEBHOOK_URL=https://...             # Para notificaÃ§Ãµes
 SLACK_WEBHOOK_URL=https://hooks.slack.com # Para alertas
 ```
 
 ---
 
-**Próximas atualizações**: Integração com Whisper, OCR, S3, Redis
+**PrÃ³ximas atualizaÃ§Ãµes**: IntegraÃ§Ã£o com Whisper, OCR, S3, Redis
+

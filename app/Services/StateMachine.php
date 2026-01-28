@@ -77,7 +77,9 @@ class StateMachine
         // Compra/Aluguel
         'STATE_Q1_LOCAL' => ['STATE_Q2_TIPO'],
         'STATE_Q2_TIPO' => ['STATE_Q3_QUARTOS'],
-        'STATE_Q3_QUARTOS' => ['STATE_Q4_ORCAMENTO'],
+        // Para ALUGUEL, o fluxo pode ir para HANDOFF após coletar quartos.
+        // Mantemos Q4 como caminho padrão (primeiro) para não afetar COMPRA.
+        'STATE_Q3_QUARTOS' => ['STATE_Q4_ORCAMENTO', 'STATE_HANDOFF'],
         'STATE_Q4_ORCAMENTO' => ['STATE_Q5_PRIORIDADES'],
         'STATE_Q5_PRIORIDADES' => ['STATE_Q6_PRAZO'],
         'STATE_Q6_PRAZO' => ['STATE_Q7_DADOS_CONTATO'],
@@ -165,7 +167,7 @@ class StateMachine
         // Agendamento de visita (profissional)
         'STATE_VISITA_IMOVEL_ESCOLHA' => "Agendamento de visita (passo 1/4) – Escolha do imóvel.\nSe o usuário está visualizando um imóvel específico (ex.: acabou de pedir detalhes de um card), pergunte de forma direta: \"Perfeito. Quer agendar visita para este imóvel?\"\nSe não estiver claro qual imóvel: pergunte \"Qual imóvel você quer visitar?\" e explique: \"Pode enviar o código (ex.: #123) ou escolher um da lista acima.\"\nAo receber a escolha, salve em slots[imovel_codigo_escolhido] (apenas o número/código). Próximo: STATE_VISITA_DATA_HORA.",
 
-        'STATE_VISITA_DATA_HORA' => "Agendamento de visita (passo 2/4) – Data e horário.\nPergunte: \"Qual dia e horário você prefere?\"\nOfereça 3 sugestões (ajuste dinamicamente): \"Hoje 18h / Amanhã 10h / Sábado 11h\".\nSe o horário indicado for fora do comercial (antes de 09:00, depois de 19:00 ou domingos), sugira alternativas no horário comercial.\nSalve data e hora em slots[visita_data] e slots[visita_hora] (ou slots[visita_datetime] quando responder combinado). Próximo: STATE_VISITA_CONFIRMACAO.",
+        'STATE_VISITA_DATA_HORA' => "Agendamento de visita (passo 2/4) – Data e horário.\nPergunte: \"Qual dia e horário você prefere?\"\n\nREGRAS IMPORTANTES:\n- NUNCA ofereça Sábado/Domingo (a imobiliária não atende aos fins de semana).\n- Ofereça SOMENTE dias úteis (segunda a sexta) e dentro do horário comercial.\n\nOfereça 3 sugestões (ajuste dinamicamente) em dias úteis, por exemplo: \"Hoje 10h / Amanhã 14h / Sexta 16h\".\nSe o usuário pedir fim de semana ou horário fora do comercial, sugira alternativas dentro do horário comercial em dias úteis.\nSalve data e hora em slots[visita_data] e slots[visita_hora] (ou slots[visita_datetime] quando responder combinado). Próximo: STATE_VISITA_CONFIRMACAO.",
 
         'STATE_VISITA_CONFIRMACAO' => "Agendamento de visita (passo 3/4) – Confirmação.\nRecapitule claramente e peça confirmação:\n- Imóvel (código e título se disponível)\n- Endereço aproximado / ponto de encontro (coletar em slots[endereco_aproximado] ou slots[ponto_encontro])\n- Dia e horário (slots[visita_data] e slots[visita_hora])\n- Nome e telefone (slots[nome], slots[telefone_whatsapp])\nEnvie a política: \"Leve documento, chegue 10 min antes.\"\nPergunte: \"Posso te lembrar 2h antes? (Sim/Não)\" e salve em slots[lembrar_visita_2h].\nSomente após confirmação final do usuário marque slots[visita_confirmada] = \"sim\". Próximo: STATE_VISITA_POS.",
 

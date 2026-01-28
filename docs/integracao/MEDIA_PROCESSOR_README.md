@@ -1,21 +1,21 @@
-# 🤖 Agente de Processamento de Mídia - Início Rápido
+﻿# ðŸ¤– Agente de Processamento de MÃ­dia - InÃ­cio RÃ¡pido
 
 ## O que foi criado?
 
-Um **agente inteligente em PHP** que processa imagens, PDFs, documentos e áudio enviados via WhatsApp através do seu chatbot Laravel.
+Um **agente inteligente em PHP** que processa imagens, PDFs, documentos e Ã¡udio enviados via WhatsApp atravÃ©s do seu chatbot Laravel.
 
-### ✨ Funcionalidades
+### âœ¨ Funcionalidades
 
 | Tipo | Processamento | Resultado |
 |------|--------------|-----------|
-| 📷 **Imagem** | OpenAI Vision (GPT-4) | Descrição detalhada do conteúdo visual |
-| 📄 **PDF** | Extração de texto (spatie/pdf-to-text) | Texto completo do documento |
-| 📊 **Documento** | Parse XML/CSV | Conteúdo estruturado |
-| 🎙️ **Áudio** | Armazenamento (Whisper futuro) | Arquivo salvo localmente |
+| ðŸ“· **Imagem** | OpenAI Vision (GPT-4) | DescriÃ§Ã£o detalhada do conteÃºdo visual |
+| ðŸ“„ **PDF** | ExtraÃ§Ã£o de texto (spatie/pdf-to-text) | Texto completo do documento |
+| ðŸ“Š **Documento** | Parse XML/CSV | ConteÃºdo estruturado |
+| ðŸŽ™ï¸ **Ãudio** | Armazenamento (Whisper futuro) | Arquivo salvo localmente |
 
 ---
 
-## ⚡ Início Rápido
+## âš¡ InÃ­cio RÃ¡pido
 
 ### 1. **Instalar Bibliotecas**
 
@@ -28,7 +28,7 @@ composer require phpoffice/phpspreadsheet # XLSX
 ### 2. **Configurar `.env`**
 
 ```env
-OPENAI_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+OPENAI_KEY=YOUR_OPENAI_KEY
 ```
 
 ### 3. **Testar Localmente**
@@ -42,100 +42,100 @@ php test_media_processor.php all
 Simplesmente envie uma imagem ou PDF ao bot:
 
 ```
-Você: [envia foto.jpg]
-Bot: ✅ Imagem analisada com sucesso!
+VocÃª: [envia foto.jpg]
+Bot: âœ… Imagem analisada com sucesso!
      Vejo uma sala moderna com...
-     [descrição detalhada]
+     [descriÃ§Ã£o detalhada]
 ```
 
 ---
 
-## 📁 Arquivos Criados
+## ðŸ“ Arquivos Criados
 
 ```
 app/Services/
-├── MediaProcessor.php          ← Serviço principal de processamento
+â”œâ”€â”€ MediaProcessor.php          â† ServiÃ§o principal de processamento
 
 app/Jobs/
-├── ProcessWhatsappMessage.php  ← Modificado para integrar MediaProcessor
-    ├── processarMedia()        ← Novo método
-    └── montarRespostaMedia()   ← Novo método
+â”œâ”€â”€ ProcessWhatsappMessage.php  â† Modificado para integrar MediaProcessor
+    â”œâ”€â”€ processarMedia()        â† Novo mÃ©todo
+    â””â”€â”€ montarRespostaMedia()   â† Novo mÃ©todo
 
 app/Console/Commands/
-├── ProcessMediaCommand.php     ← CLI para processar arquivo local
-└── CleanupMediaCommand.php     ← CLI para limpar arquivos antigos
+â”œâ”€â”€ ProcessMediaCommand.php     â† CLI para processar arquivo local
+â””â”€â”€ CleanupMediaCommand.php     â† CLI para limpar arquivos antigos
 
-Documentação/
-├── MEDIA_PROCESSOR_GUIA.md     ← Guia completo
-├── MEDIA_PROCESSOR_FLUXO.md    ← Diagramas de arquitetura
-└── test_media_processor.php    ← Script de teste
+DocumentaÃ§Ã£o/
+â”œâ”€â”€ MEDIA_PROCESSOR_GUIA.md     â† Guia completo
+â”œâ”€â”€ MEDIA_PROCESSOR_FLUXO.md    â† Diagramas de arquitetura
+â””â”€â”€ test_media_processor.php    â† Script de teste
 ```
 
 ---
 
-## 🏗️ Arquitetura
+## ðŸ—ï¸ Arquitetura
 
 ```
-WhatsApp → Evolution API → ProcessWhatsappMessage
-                              ↓
+WhatsApp â†’ Evolution API â†’ ProcessWhatsappMessage
+                              â†“
                        MediaProcessor
-                       ├─ Imagem → OpenAI Vision
-                       ├─ PDF → spatie/pdf-to-text
-                       ├─ Documento → Parse
-                       └─ Áudio → Armazenar
-                              ↓
+                       â”œâ”€ Imagem â†’ OpenAI Vision
+                       â”œâ”€ PDF â†’ spatie/pdf-to-text
+                       â”œâ”€ Documento â†’ Parse
+                       â””â”€ Ãudio â†’ Armazenar
+                              â†“
                        Resposta contextualizada
-                              ↓
-                          Evolution → WhatsApp
+                              â†“
+                          Evolution â†’ WhatsApp
 ```
 
 ---
 
-## 💡 Exemplos de Uso
+## ðŸ’¡ Exemplos de Uso
 
-### Exemplo 1: Análise de Imóvel
+### Exemplo 1: AnÃ¡lise de ImÃ³vel
 ```
 User: [envia foto do apartamento]
-Bot:  ✅ Imagem analisada com sucesso!
+Bot:  âœ… Imagem analisada com sucesso!
       
-      Aqui está o que identifiquei:
-      • Sala ampla com 3 janelas
-      • Piso em madeira clara
-      • Iluminação natural excelente
-      • Decoração contemporânea
+      Aqui estÃ¡ o que identifiquei:
+      â€¢ Sala ampla com 3 janelas
+      â€¢ Piso em madeira clara
+      â€¢ IluminaÃ§Ã£o natural excelente
+      â€¢ DecoraÃ§Ã£o contemporÃ¢nea
       
-      Gostaria de saber o preço ou localização?
+      Gostaria de saber o preÃ§o ou localizaÃ§Ã£o?
 ```
 
 ### Exemplo 2: Processamento de Contrato
 ```
 User: [envia contrato.pdf]
-Bot:  ✅ PDF processado com sucesso!
+Bot:  âœ… PDF processado com sucesso!
       
       Identifiquei:
-      • Valor: R$ 650.000
-      • Localização: Morumbi, SP
-      • Pagamento: 50% entrada
-      • Prazo: 360 meses
+      â€¢ Valor: R$ 650.000
+      â€¢ LocalizaÃ§Ã£o: Morumbi, SP
+      â€¢ Pagamento: 50% entrada
+      â€¢ Prazo: 360 meses
       
-      Gostaria de análise financeira?
+      Gostaria de anÃ¡lise financeira?
 ```
 
 ### Exemplo 3: Processamento de Planilha
 ```
 User: [envia dados.xlsx]
-Bot:  ✅ Documento processado!
+Bot:  âœ… Documento processado!
       
-      Vejo uma planilha com 15 imóveis listados.
-      Posso ajudá-lo a filtrar por:
-      • Bairro (Morumbi, Vila Mariana, etc)
-      • Valor (até 500k, 500-800k, 800k+)
-      • Quartos (2, 3, 4+)
+      Vejo uma planilha com 15 imÃ³veis listados.
+      Posso ajudÃ¡-lo a filtrar por:
+      â€¢ Bairro (Morumbi, Vila Mariana, etc)
+      â€¢ Valor (atÃ© 500k, 500-800k, 800k+)
+      â€¢ Quartos (2, 3, 4+)
 ```
 
 ---
 
-## 🔧 Comandos Artisan
+## ðŸ”§ Comandos Artisan
 
 ### Processar arquivo local
 ```bash
@@ -160,44 +160,44 @@ protected function schedule(Schedule $schedule)
 
 ---
 
-## 📊 Estrutura de Armazenamento
+## ðŸ“Š Estrutura de Armazenamento
 
 ```
 storage/app/public/whatsapp_media/
-├── images/
-│   ├── img_657a3b1c.jpg
-│   ├── img_657a3b2d.png
-│   └── ...
-├── documents/
-│   ├── doc_657a3c1f.pdf
-│   ├── doc_657a3c2g.docx
-│   └── ...
-└── audio/
-    ├── audio_657a3d1j.ogg
-    └── ...
+â”œâ”€â”€ images/
+â”‚   â”œâ”€â”€ img_657a3b1c.jpg
+â”‚   â”œâ”€â”€ img_657a3b2d.png
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ documents/
+â”‚   â”œâ”€â”€ doc_657a3c1f.pdf
+â”‚   â”œâ”€â”€ doc_657a3c2g.docx
+â”‚   â””â”€â”€ ...
+â””â”€â”€ audio/
+    â”œâ”€â”€ audio_657a3d1j.ogg
+    â””â”€â”€ ...
 ```
 
 ---
 
-## 🚀 Fluxo Completo
+## ðŸš€ Fluxo Completo
 
-1. **Usuário envia arquivo** via WhatsApp
+1. **UsuÃ¡rio envia arquivo** via WhatsApp
 2. **Evolution API recebe** e dispara webhook
-3. **ProcessWhatsappMessage** detecta tipo de mídia
-4. **MediaProcessor** é acionado:
+3. **ProcessWhatsappMessage** detecta tipo de mÃ­dia
+4. **MediaProcessor** Ã© acionado:
    - Valida tipo e tamanho
    - Baixa arquivo
    - Processa conforme tipo
-   - Extrai conteúdo
+   - Extrai conteÃºdo
    - Armazena localmente
-5. **Thread é atualizado** com histórico
-6. **Resposta contextualizada** é montada
+5. **Thread Ã© atualizado** com histÃ³rico
+6. **Resposta contextualizada** Ã© montada
 7. **Evolution envia resposta** ao WhatsApp
-8. **Usuário recebe** análise completa
+8. **UsuÃ¡rio recebe** anÃ¡lise completa
 
 ---
 
-## ⚙️ Configurações
+## âš™ï¸ ConfiguraÃ§Ãµes
 
 ### Limites
 ```php
@@ -217,41 +217,41 @@ Http::timeout(30)->get($url);  // 30 segundos para download
 
 ---
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
-| Problema | Causa | Solução |
+| Problema | Causa | SoluÃ§Ã£o |
 |----------|-------|---------|
-| "Imagem não pode ser analisada" | OPENAI_KEY não configurada | Adicionar em `.env` |
-| "PDF recebido mas sem texto" | spatie/pdf-to-text não instalado | `composer require spatie/pdf-to-text` |
+| "Imagem nÃ£o pode ser analisada" | OPENAI_KEY nÃ£o configurada | Adicionar em `.env` |
+| "PDF recebido mas sem texto" | spatie/pdf-to-text nÃ£o instalado | `composer require spatie/pdf-to-text` |
 | Timeout ao processar | Arquivo muito grande | Aumentar timeout ou reduzir tamanho |
-| Arquivos acumulando | Sem limpeza automática | Agendar `media:cleanup` no Scheduler |
+| Arquivos acumulando | Sem limpeza automÃ¡tica | Agendar `media:cleanup` no Scheduler |
 
 ---
 
-## 🔮 Roadmap
+## ðŸ”® Roadmap
 
 - [x] Processamento de imagens com OpenAI Vision
-- [x] Extração de texto de PDFs
+- [x] ExtraÃ§Ã£o de texto de PDFs
 - [x] Armazenamento seguro de arquivos
-- [ ] Transcrição de áudio (Whisper API)
+- [ ] TranscriÃ§Ã£o de Ã¡udio (Whisper API)
 - [ ] OCR em imagens (Tesseract)
-- [ ] Análise de documentos (Claude)
-- [ ] Cache de análises (Redis)
+- [ ] AnÃ¡lise de documentos (Claude)
+- [ ] Cache de anÃ¡lises (Redis)
 - [ ] Processamento em background (fila)
 
 ---
 
-## 📚 Documentação
+## ðŸ“š DocumentaÃ§Ã£o
 
 - **Guia Completo**: [MEDIA_PROCESSOR_GUIA.md](./MEDIA_PROCESSOR_GUIA.md)
 - **Fluxos Visuais**: [MEDIA_PROCESSOR_FLUXO.md](./MEDIA_PROCESSOR_FLUXO.md)
-- **Implementação**: [app/Services/MediaProcessor.php](./app/Services/MediaProcessor.php)
+- **ImplementaÃ§Ã£o**: [app/Services/MediaProcessor.php](./app/Services/MediaProcessor.php)
 
 ---
 
-## ✅ Checklist de Implementação
+## âœ… Checklist de ImplementaÃ§Ã£o
 
-- [x] Criar serviço MediaProcessor
+- [x] Criar serviÃ§o MediaProcessor
 - [x] Integrar em ProcessWhatsappMessage
 - [x] Suporte para imagens (OpenAI Vision)
 - [x] Suporte para PDFs (spatie/pdf-to-text)
@@ -260,25 +260,26 @@ Http::timeout(30)->get($url);  // 30 segundos para download
 - [x] Logging estruturado
 - [x] Tratamento de erros
 - [x] Comandos Artisan
-- [x] Documentação completa
+- [x] DocumentaÃ§Ã£o completa
 - [x] Script de teste
-- [ ] Testes unitários
-- [ ] Integração com Whisper (áudio)
-- [ ] Cache de análises
+- [ ] Testes unitÃ¡rios
+- [ ] IntegraÃ§Ã£o com Whisper (Ã¡udio)
+- [ ] Cache de anÃ¡lises
 
 ---
 
-## 📞 Próximos Passos
+## ðŸ“ž PrÃ³ximos Passos
 
-1. **Instalar dependências opcionais** conforme necessário
+1. **Instalar dependÃªncias opcionais** conforme necessÃ¡rio
 2. **Testar com `test_media_processor.php`**
 3. **Enviar arquivo real ao WhatsApp** e verificar resposta
 4. **Monitorar logs** em `storage/logs/laravel.log`
 5. **Agendar limpeza** de arquivos antigos
-6. **Expandir conforme feedback** dos usuários
+6. **Expandir conforme feedback** dos usuÃ¡rios
 
 ---
 
-**Última atualização**: 16/01/2025
-**Versão**: 1.0.0
-**Status**: ✅ Pronto para produção
+**Ãšltima atualizaÃ§Ã£o**: 16/01/2025
+**VersÃ£o**: 1.0.0
+**Status**: âœ… Pronto para produÃ§Ã£o
+

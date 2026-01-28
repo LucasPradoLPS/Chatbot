@@ -3,6 +3,11 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/logs/
+/storage/framework/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
 /vendor
 .env
 .env.backup

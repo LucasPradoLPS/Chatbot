@@ -13,6 +13,7 @@ class Thread extends Model
         'empresa_id',
         'numero_cliente',
         'thread_id',
+        'assistente_id',
         'ultima_atividade_usuario',
         'slots',
         'etapa_fluxo',

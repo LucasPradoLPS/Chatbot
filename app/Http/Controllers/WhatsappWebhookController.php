@@ -13,6 +13,9 @@ class WhatsappWebhookController extends Controller
     {
         $data = $request->all();
 
+        // Log TUDO que recebe
+        Log::info('[WEBHOOK-RECEBIDO] Payload completo', ['payload' => $data]);
+
         // Extrair remetente de forma robusta, cobrindo formatos alternativos do Evolution
         $instance = $data['instance'] ?? null;
         $payloadData = $data['data'] ?? [];
@@ -31,6 +34,15 @@ class WhatsappWebhookController extends Controller
         $fromMe = $key['fromMe'] ?? false;
         $source = $payloadData['source'] ?? null;
         $senderPn = $key['senderPn'] ?? null;
+
+        Log::info('[DEBUG-PARSED] Dados extraídos', [
+            'instance' => $instance,
+            'remetente' => $remetente,
+            'message_empty' => empty($message),
+            'messageId' => $messageId,
+            'status' => $status,
+            'fromMe' => $fromMe,
+        ]);
 
         // Dedup rápido: evita enfileirar/reprocessar a mesma mensagem ou update de status múltiplas vezes
         if ($messageId) {

@@ -34,6 +34,7 @@ class SlotsSchema
         'vagas' => null,
         'metragem_min' => null, // opcional
         'condominio_max' => null, // opcional
+        'tags_prioridades' => null, // lista de prioridades (multi-seleção)
         'pet_friendly' => null, // sim/não
         'mobiliado' => null, // sim/não
         'pronto_ou_planta' => null,

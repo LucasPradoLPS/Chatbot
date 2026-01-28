@@ -1,31 +1,31 @@
-# 📚 DOCUMENTAÇÃO COMPLETA - CHATBOT LARAVEL + WHATSAPP + OPENAI
+﻿# ðŸ“š DOCUMENTAÃ‡ÃƒO COMPLETA - CHATBOT LARAVEL + WHATSAPP + OPENAI
 
-**Versão**: 2.0 Production-Ready  
+**VersÃ£o**: 2.0 Production-Ready  
 **Data**: Janeiro 2026  
-**Status**: ✅ Testado com 1.546 requisições (100% sucesso)
+**Status**: âœ… Testado com 1.546 requisiÃ§Ãµes (100% sucesso)
 
 ---
 
-## 📋 ÍNDICE COMPLETO
+## ðŸ“‹ ÃNDICE COMPLETO
 
-1. [🚀 Começar Aqui](#começar-aqui)
-2. [⚙️ Configuração Completa](#configuração-completa)
-3. [🏗️ Arquitetura do Sistema](#arquitetura-do-sistema)
-4. [🎯 Matching Engine & Recomendações](#matching-engine--recomendações)
-5. [📷 Media Processor (Imagens e PDFs)](#media-processor-imagens-e-pdfs)
-6. [✅ Validação Contextual](#validação-contextual)
-7. [🧪 Guia de Testes](#guia-de-testes)
-8. [💡 Exemplos Práticos](#exemplos-práticos)
-9. [🚀 Melhorias Implementadas](#melhorias-implementadas)
-10. [🔧 Troubleshooting](#troubleshooting)
+1. [ðŸš€ ComeÃ§ar Aqui](#comeÃ§ar-aqui)
+2. [âš™ï¸ ConfiguraÃ§Ã£o Completa](#configuraÃ§Ã£o-completa)
+3. [ðŸ—ï¸ Arquitetura do Sistema](#arquitetura-do-sistema)
+4. [ðŸŽ¯ Matching Engine & RecomendaÃ§Ãµes](#matching-engine--recomendaÃ§Ãµes)
+5. [ðŸ“· Media Processor (Imagens e PDFs)](#media-processor-imagens-e-pdfs)
+6. [âœ… ValidaÃ§Ã£o Contextual](#validaÃ§Ã£o-contextual)
+7. [ðŸ§ª Guia de Testes](#guia-de-testes)
+8. [ðŸ’¡ Exemplos PrÃ¡ticos](#exemplos-prÃ¡ticos)
+9. [ðŸš€ Melhorias Implementadas](#melhorias-implementadas)
+10. [ðŸ”§ Troubleshooting](#troubleshooting)
 
 ---
 
-## 🚀 COMEÇAR AQUI
+## ðŸš€ COMEÃ‡AR AQUI
 
 ### Primeiros 5 Minutos
 
-#### Passo 1: Instalar Dependências
+#### Passo 1: Instalar DependÃªncias
 ```bash
 cd c:\Users\lucas\Downloads\Chatbot-laravel
 composer install
@@ -46,7 +46,7 @@ DB_PASSWORD=sua_senha
 
 **OpenAI:**
 ```
-OPENAI_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+OPENAI_KEY=YOUR_OPENAI_KEY
 ```
 Obter chave em: https://platform.openai.com/account/api-keys
 
@@ -74,22 +74,22 @@ Em outro terminal (manter rodando sempre):
 php artisan queue:work --queue=default
 ```
 
-#### Passo 5: Teste Rápido
+#### Passo 5: Teste RÃ¡pido
 ```bash
 php test_saudacao.php
 ```
 
-Você deve ver:
+VocÃª deve ver:
 ```
-✓ Mensagem enviada com sucesso!
-✓ O bot deve responder com 'Olá [Nome]!' no início da mensagem.
+âœ“ Mensagem enviada com sucesso!
+âœ“ O bot deve responder com 'OlÃ¡ [Nome]!' no inÃ­cio da mensagem.
 ```
 
 ---
 
-## ⚙️ CONFIGURAÇÃO COMPLETA
+## âš™ï¸ CONFIGURAÃ‡ÃƒO COMPLETA
 
-### Estrutura de Dados Necessária
+### Estrutura de Dados NecessÃ¡ria
 
 O sistema requer 4 entidades principais:
 
@@ -97,7 +97,7 @@ O sistema requer 4 entidades principais:
 ```php
 // Banco: empresas
 - id (int, PK)
-- nome (string) - Ex: "California Imobiliária"
+- nome (string) - Ex: "California ImobiliÃ¡ria"
 - memoria_limite (int, default=4) - Quantas mensagens anteriores manter
 - created_at, updated_at
 ```
@@ -132,80 +132,80 @@ O sistema requer 4 entidades principais:
 - created_at, updated_at
 ```
 
-### Variáveis de Ambiente Importantes
+### VariÃ¡veis de Ambiente Importantes
 
-| Variável | Descrição | Obrigatória |
+| VariÃ¡vel | DescriÃ§Ã£o | ObrigatÃ³ria |
 |----------|-----------|------------|
-| `OPENAI_KEY` | Chave da API OpenAI | ✅ Sim |
-| `EVOLUTION_KEY` | Chave da Evolution API | ✅ Sim |
-| `EVOLUTION_URL` | URL da Evolution API | ✅ Sim |
-| `DB_CONNECTION` | Driver do banco (pgsql) | ✅ Sim |
-| `DB_HOST` | Host do banco | ✅ Sim |
-| `DB_PORT` | Porta do banco (5432) | ✅ Sim |
-| `DB_DATABASE` | Nome da base de dados | ✅ Sim |
-| `DB_USERNAME` | Usuário do banco | ✅ Sim |
-| `DB_PASSWORD` | Senha do banco | ✅ Sim |
-| `QUEUE_CONNECTION` | Driver de fila (database) | ⚠️ Recomendado |
-| `APP_TIMEZONE` | Timezone (America/Sao_Paulo) | ⚠️ Recomendado |
+| `OPENAI_KEY` | Chave da API OpenAI | âœ… Sim |
+| `EVOLUTION_KEY` | Chave da Evolution API | âœ… Sim |
+| `EVOLUTION_URL` | URL da Evolution API | âœ… Sim |
+| `DB_CONNECTION` | Driver do banco (pgsql) | âœ… Sim |
+| `DB_HOST` | Host do banco | âœ… Sim |
+| `DB_PORT` | Porta do banco (5432) | âœ… Sim |
+| `DB_DATABASE` | Nome da base de dados | âœ… Sim |
+| `DB_USERNAME` | UsuÃ¡rio do banco | âœ… Sim |
+| `DB_PASSWORD` | Senha do banco | âœ… Sim |
+| `QUEUE_CONNECTION` | Driver de fila (database) | âš ï¸ Recomendado |
+| `APP_TIMEZONE` | Timezone (America/Sao_Paulo) | âš ï¸ Recomendado |
 
-### Horário de Atendimento
+### HorÃ¡rio de Atendimento
 
 O bot responde automaticamente apenas em:
 - **Dias**: Segunda a Sexta-feira
-- **Horário**: 08h00 às 17h00 (São Paulo)
+- **HorÃ¡rio**: 08h00 Ã s 17h00 (SÃ£o Paulo)
 
-Fora desse horário, envia mensagem automática:
+Fora desse horÃ¡rio, envia mensagem automÃ¡tica:
 ```
-Desculpe, estamos fora do horário de atendimento.
-Horário de funcionamento: Segunda a Sexta-feira, de 08h às 17h.
-Sua mensagem foi registrada e responderemos assim que possível.
+Desculpe, estamos fora do horÃ¡rio de atendimento.
+HorÃ¡rio de funcionamento: Segunda a Sexta-feira, de 08h Ã s 17h.
+Sua mensagem foi registrada e responderemos assim que possÃ­vel.
 ```
 
 ---
 
-## 🏗️ ARQUITETURA DO SISTEMA
+## ðŸ—ï¸ ARQUITETURA DO SISTEMA
 
 ### Fluxo de Uma Mensagem
 
 ```
-┌─────────────────────────────────────────────────┐
-│ 1. WhatsApp/Evolution API                       │
-│    Usuário envia mensagem                       │
-└────────────────┬────────────────────────────────┘
-                 │ Webhook POST
-                 ▼
-┌─────────────────────────────────────────────────┐
-│ 2. WhatsappWebhookController                    │
-│    - Validação de payload                       │
-│    - Sanitização de inputs                      │
-│    - Deduplicação (messageId)                   │
-└────────────────┬────────────────────────────────┘
-                 │ Dispatch Job
-                 ▼
-┌─────────────────────────────────────────────────┐
-│ 3. ProcessWhatsappMessage (Job em Fila)         │
-│    - Verificação de horário de atendimento      │
-│    - Obtenção/criação de Thread OpenAI          │
-│    - Envio de mensagem para IA                  │
-│    - Parsing de resposta (slots, etapa)         │
-│    - Geração de recomendações (se necessário)   │
-│    - Validação contextual                       │
-└────────────────┬────────────────────────────────┘
-                 │ Processamento Paralelo
-         ┌───────┴────────┐
-         ▼                 ▼
-    ┌────────────┐   ┌─────────────┐
-    │ OpenAI     │   │ Evolution    │
-    │ Assistants │   │ API (envio)  │
-    │ v2         │   │              │
-    └────────────┘   └─────────────┘
-         │                 │
-         └───────┬─────────┘
-                 ▼
-┌─────────────────────────────────────────────────┐
-│ 4. Resposta ao Usuário                          │
-│    Mensagem formatada via WhatsApp              │
-└─────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ 1. WhatsApp/Evolution API                       â”‚
+â”‚    UsuÃ¡rio envia mensagem                       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â”‚ Webhook POST
+                 â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ 2. WhatsappWebhookController                    â”‚
+â”‚    - ValidaÃ§Ã£o de payload                       â”‚
+â”‚    - SanitizaÃ§Ã£o de inputs                      â”‚
+â”‚    - DeduplicaÃ§Ã£o (messageId)                   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â”‚ Dispatch Job
+                 â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ 3. ProcessWhatsappMessage (Job em Fila)         â”‚
+â”‚    - VerificaÃ§Ã£o de horÃ¡rio de atendimento      â”‚
+â”‚    - ObtenÃ§Ã£o/criaÃ§Ã£o de Thread OpenAI          â”‚
+â”‚    - Envio de mensagem para IA                  â”‚
+â”‚    - Parsing de resposta (slots, etapa)         â”‚
+â”‚    - GeraÃ§Ã£o de recomendaÃ§Ãµes (se necessÃ¡rio)   â”‚
+â”‚    - ValidaÃ§Ã£o contextual                       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â”‚ Processamento Paralelo
+         â”Œâ”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”
+         â–¼                 â–¼
+    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+    â”‚ OpenAI     â”‚   â”‚ Evolution    â”‚
+    â”‚ Assistants â”‚   â”‚ API (envio)  â”‚
+    â”‚ v2         â”‚   â”‚              â”‚
+    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚                 â”‚
+         â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ 4. Resposta ao UsuÃ¡rio                          â”‚
+â”‚    Mensagem formatada via WhatsApp              â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### Componentes Principais
@@ -215,31 +215,31 @@ Sua mensagem foi registrada e responderemos assim que possível.
 | **Controller** | `WhatsappWebhookController.php` | Recebe webhooks, valida, enfileira jobs |
 | **Job** | `ProcessWhatsappMessage.php` | Processa mensagem, chama IA, envia resposta |
 | **Service: OpenAI** | `OpenAIService.php` | Gerencia Assistants e Threads da OpenAI |
-| **Service: IA** | `IntentDetector.php` | Detecta intenção do usuário (objetivo, estado fluxo) |
+| **Service: IA** | `IntentDetector.php` | Detecta intenÃ§Ã£o do usuÃ¡rio (objetivo, estado fluxo) |
 | **Service: Slots** | `SlotsSchema.php` | Define estrutura de dados a extrair |
-| **Service: Máquina de Estado** | `StateMachine.php` | Define prompts para cada etapa do fluxo |
-| **Service: Matching** | `MatchingEngine.php` | Recomenda imóveis por scoring |
-| **Service: Validação** | `ContextualResponseValidator.php` | Valida resposta da IA |
-| **Service: Mídia** | `MediaProcessor.php` | Processa imagens, PDFs, documentos |
+| **Service: MÃ¡quina de Estado** | `StateMachine.php` | Define prompts para cada etapa do fluxo |
+| **Service: Matching** | `MatchingEngine.php` | Recomenda imÃ³veis por scoring |
+| **Service: ValidaÃ§Ã£o** | `ContextualResponseValidator.php` | Valida resposta da IA |
+| **Service: MÃ­dia** | `MediaProcessor.php` | Processa imagens, PDFs, documentos |
 | **Service: Cache** | `CacheOptimizationService.php` | Caching inteligente de dados |
-| **Service: Validação Input** | `InputValidationService.php` | Sanitização e rate limiting |
-| **Service: HTTP Resiliente** | `ResilientHttpService.php` | Retry automático com circuit breaker |
+| **Service: ValidaÃ§Ã£o Input** | `InputValidationService.php` | SanitizaÃ§Ã£o e rate limiting |
+| **Service: HTTP Resiliente** | `ResilientHttpService.php` | Retry automÃ¡tico com circuit breaker |
 
 ### Banco de Dados
 
 Tabelas principais:
-- `empresas` - Configuração da empresa
-- `instancia_whatsapps` - Instâncias WhatsApp vinculadas
+- `empresas` - ConfiguraÃ§Ã£o da empresa
+- `instancia_whatsapps` - InstÃ¢ncias WhatsApp vinculadas
 - `agentes` - Agentes da empresa
 - `agente_gerados` - Assistants criados na OpenAI
 - `threads` - Conversas com clientes (1 por cliente, atualiza-se)
-- `mensagens_memorias` - Histórico de mensagens para contexto
+- `mensagens_memorias` - HistÃ³rico de mensagens para contexto
 - `mensagens` - Log completo de mensagens
 - `ia_intervencoes` - Registra quando a IA teve que intervir
 - `jobs` - Fila de jobs para processar mensagens
 - `cache` - Cache de dados (threads, assistants, etc)
 
-Índices de performance adicionados:
+Ãndices de performance adicionados:
 ```sql
 CREATE INDEX idx_threads_cliente_id ON threads(cliente_id);
 CREATE INDEX idx_threads_empresa_id ON threads(empresa_id);
@@ -251,41 +251,41 @@ CREATE INDEX idx_instancia_name ON instancia_whatsapps(instance_name);
 
 ---
 
-## 🎯 MATCHING ENGINE & RECOMENDAÇÕES
+## ðŸŽ¯ MATCHING ENGINE & RECOMENDAÃ‡Ã•ES
 
-### O Que É
+### O Que Ã‰
 
 Sistema inteligente que:
-1. **Coleta** preferências do usuário (bairro, valor, quartos, etc)
-2. **Calcula Score** para cada imóvel disponível
-3. **Categoriza** em 3 níveis: Exato, Quase Lá, Descartado
-4. **Recomenda** top imóveis com justificativa visual
+1. **Coleta** preferÃªncias do usuÃ¡rio (bairro, valor, quartos, etc)
+2. **Calcula Score** para cada imÃ³vel disponÃ­vel
+3. **Categoriza** em 3 nÃ­veis: Exato, Quase LÃ¡, Descartado
+4. **Recomenda** top imÃ³veis com justificativa visual
 
-### Fórmula de Scoring
+### FÃ³rmula de Scoring
 
-Para cada imóvel:
+Para cada imÃ³vel:
 ```
 Score = (Pontos Positivos) - (Penalidades)
 
 Pontos Positivos:
 - Quartos exatos: +10
-- Quartos próximo: +5
+- Quartos prÃ³ximo: +5
 - Bairro exato: +15
-- Bairro próximo: +8
-- Valor dentro do orçamento: +20
+- Bairro prÃ³ximo: +8
+- Valor dentro do orÃ§amento: +20
 - Valor ligeiramente acima: +10
 - Tag de prioridade (pet_friendly, varanda, etc): +3 cada
 
 Penalidades:
 - Quartos significativamente diferentes: -8
 - Bairro muito longe: -15
-- Valor 30% acima do orçamento: -20
+- Valor 30% acima do orÃ§amento: -20
 - Valor 50%+ acima: -30
 
 Resultado:
-- 80+: EXATO ✅ (mostrar topo)
-- 40-79: QUASE LÁ ⚠️ (com aviso)
-- <40: DESCARTADO ❌ (ocultar)
+- 80+: EXATO âœ… (mostrar topo)
+- 40-79: QUASE LÃ âš ï¸ (com aviso)
+- <40: DESCARTADO âŒ (ocultar)
 ```
 
 ### Exemplo de Uso
@@ -293,7 +293,7 @@ Resultado:
 ```php
 use App\Services\MatchingEngine;
 
-// Preferências do usuário
+// PreferÃªncias do usuÃ¡rio
 $perfil = [
     'bairro_regiao' => ['Perdizes', 'Vila Madalena', 'Vila Mariana'],
     'quartos' => 3,
@@ -304,11 +304,11 @@ $perfil = [
     'objetivo' => 'comprar'
 ];
 
-// Catálogo de imóveis (seu banco ou API)
+// CatÃ¡logo de imÃ³veis (seu banco ou API)
 $imoveis = [
     ['id' => 1, 'bairro' => 'Perdizes', 'quartos' => 3, 'vagas' => 2, 'valor' => 450000, 'tags' => ['pet_friendly']],
     ['id' => 2, 'bairro' => 'Centro', 'quartos' => 2, 'vagas' => 1, 'valor' => 250000, 'tags' => []],
-    // ... mais imóveis
+    // ... mais imÃ³veis
 ];
 
 // Processar
@@ -317,20 +317,20 @@ $resultado = $engine->recomendarImoveis($perfil, $imoveis);
 
 // Resultado
 [
-    'imoveis_exatos' => [ /* top imóveis */ ],
+    'imoveis_exatos' => [ /* top imÃ³veis */ ],
     'imoveis_quase_la' => [ /* alternativos */ ],
-    'imoveis_descartados' => [ /* não recomendados */ ],
-    'mensagem_formatada' => "Encontrei 2 opções perfeitas..." // Para enviar ao usuário
+    'imoveis_descartados' => [ /* nÃ£o recomendados */ ],
+    'mensagem_formatada' => "Encontrei 2 opÃ§Ãµes perfeitas..." // Para enviar ao usuÃ¡rio
 ]
 ```
 
-### Personalização
+### PersonalizaÃ§Ã£o
 
 Editar valores em `app/Config/MatchingEngineConfig.php`:
 
 ```php
 public const POINTS = [
-    'quartos_exatos' => 10,      // Aumentar/diminuir importância
+    'quartos_exatos' => 10,      // Aumentar/diminuir importÃ¢ncia
     'bairro_exato' => 15,
     'valor_dentro_orcamento' => 20,
 ];
@@ -342,44 +342,44 @@ public const PENALTIES = [
 ];
 
 public const THRESHOLDS = [
-    'exato' => 80,      // Score mínimo para "exato"
-    'quase_la' => 40,   // Score mínimo para "quase lá"
+    'exato' => 80,      // Score mÃ­nimo para "exato"
+    'quase_la' => 40,   // Score mÃ­nimo para "quase lÃ¡"
 ];
 ```
 
 ---
 
-## 📷 MEDIA PROCESSOR (Imagens e PDFs)
+## ðŸ“· MEDIA PROCESSOR (Imagens e PDFs)
 
 ### O Que Faz
 
 Processa automaticamente:
-- **Imagens** (JPEG, PNG) → Análise visual pela OpenAI
-- **PDFs** → Extração de texto
-- **Documentos Word** (DOCX) → Conversão para texto
-- **Planilhas** (CSV) → Leitura estruturada
+- **Imagens** (JPEG, PNG) â†’ AnÃ¡lise visual pela OpenAI
+- **PDFs** â†’ ExtraÃ§Ã£o de texto
+- **Documentos Word** (DOCX) â†’ ConversÃ£o para texto
+- **Planilhas** (CSV) â†’ Leitura estruturada
 
 ### Exemplos de Uso
 
 #### Imagem
 ```
-Usuário: [envia foto.jpg de apartamento]
-Bot: "✅ Identifiquei uma sala moderna 4x5m com sofá cinza..."
+UsuÃ¡rio: [envia foto.jpg de apartamento]
+Bot: "âœ… Identifiquei uma sala moderna 4x5m com sofÃ¡ cinza..."
 ```
 
 #### PDF
 ```
-Usuário: [envia contrato.pdf]
-Bot: "✅ Documento analisado!
-     • Valor: R$ 650.000
-     • Local: Morumbi, SP
-     • Pagamento: 50% entrada + 50% parcelado"
+UsuÃ¡rio: [envia contrato.pdf]
+Bot: "âœ… Documento analisado!
+     â€¢ Valor: R$ 650.000
+     â€¢ Local: Morumbi, SP
+     â€¢ Pagamento: 50% entrada + 50% parcelado"
 ```
 
 #### Planilha
 ```
-Usuário: [envia imoveis.csv com 15 linhas]
-Bot: "✅ Analisei sua planilha com 15 imóveis.
+UsuÃ¡rio: [envia imoveis.csv com 15 linhas]
+Bot: "âœ… Analisei sua planilha com 15 imÃ³veis.
      Posso filtrar por: bairro, valor, tipo..."
 ```
 
@@ -394,7 +394,7 @@ Bot: "✅ Analisei sua planilha com 15 imóveis.
 - ZipArchive do PHP habilitado (verificar com `php -m`)
 - Para `.doc` antigo: instale `antiword` e adicione ao PATH
 
-### Código de Teste
+### CÃ³digo de Teste
 
 ```bash
 php test_media_processor.php all
@@ -402,15 +402,15 @@ php test_media_processor.php all
 
 ---
 
-## ✅ VALIDAÇÃO CONTEXTUAL
+## âœ… VALIDAÃ‡ÃƒO CONTEXTUAL
 
 ### Objetivo
 
-Validar que a resposta da IA é:
+Validar que a resposta da IA Ã©:
 1. **Coerente** com o contexto da conversa
 2. **Apropriada** para a etapa atual do fluxo
-3. **Segura** (não contém dados sensíveis)
-4. **Consistente** com histórico
+3. **Segura** (nÃ£o contÃ©m dados sensÃ­veis)
+4. **Consistente** com histÃ³rico
 
 ### Exemplo
 
@@ -420,10 +420,10 @@ use App\Services\ContextualResponseValidator;
 $validator = new ContextualResponseValidator();
 
 $valido = $validator->validar(
-    resposta: "Encontrei 5 opções perfeitas para você!",
+    resposta: "Encontrei 5 opÃ§Ãµes perfeitas para vocÃª!",
     contexto: [
         'etapa_fluxo' => 'catalogo',
-        'ultima_mensagem' => "Quero 3 quartos em Perdizes até 500 mil",
+        'ultima_mensagem' => "Quero 3 quartos em Perdizes atÃ© 500 mil",
         'historico' => [...]
     ]
 );
@@ -434,17 +434,17 @@ if (!$valido) {
 }
 ```
 
-### Regras de Validação
+### Regras de ValidaÃ§Ã£o
 
-Cada etapa tem regras específicas:
+Cada etapa tem regras especÃ­ficas:
 - **qualificacao**: Deve extrair slots (bairro, valor, quartos)
-- **catalogo**: Deve recomendar imóveis ou pedir ajuste
+- **catalogo**: Deve recomendar imÃ³veis ou pedir ajuste
 - **agenda**: Deve confirmar data/hora
-- **documento**: Deve processar ou pedir reformulação
+- **documento**: Deve processar ou pedir reformulaÃ§Ã£o
 
 ---
 
-## 🧪 GUIA DE TESTES
+## ðŸ§ª GUIA DE TESTES
 
 ### Teste Local (Sem WhatsApp)
 
@@ -452,25 +452,25 @@ Cada etapa tem regras específicas:
 php test_matching_engine.php
 ```
 
-Saída esperada:
+SaÃ­da esperada:
 ```
-═════════════════════════════════════════
-TESTE: MatchingEngine - Lógica Recomendação
-═════════════════════════════════════════
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+TESTE: MatchingEngine - LÃ³gica RecomendaÃ§Ã£o
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-👤 PERFIL DO USUÁRIO:
-   Nome: João Silva
+ðŸ‘¤ PERFIL DO USUÃRIO:
+   Nome: JoÃ£o Silva
    Bairros: Vila Mariana, Pinheiros, Vila Madalena
-   Orçamento: R$ 500.000
+   OrÃ§amento: R$ 500.000
    Quartos: 2
 
-📊 ANÁLISE DE IMÓVEIS:
+ðŸ“Š ANÃLISE DE IMÃ“VEIS:
    Processados: 50
-   Exatos: 3 ✅
-   Quase Lá: 7 ⚠️
-   Descartados: 40 ❌
+   Exatos: 3 âœ…
+   Quase LÃ¡: 7 âš ï¸
+   Descartados: 40 âŒ
 
-✅ TESTE PASSOU!
+âœ… TESTE PASSOU!
 ```
 
 ### Teste com Media
@@ -485,7 +485,7 @@ Testa:
 - Documento (DOCX)
 - Planilha (CSV)
 
-### Teste de Integração (Com WhatsApp Real)
+### Teste de IntegraÃ§Ã£o (Com WhatsApp Real)
 
 ```bash
 # Terminal 1: Servidor
@@ -501,81 +501,81 @@ php test_media_webhook.php all
 ### Teste de Carga (Stress Test)
 
 ```bash
-# 1.546 requisições, 100% sucesso rate
+# 1.546 requisiÃ§Ãµes, 100% sucesso rate
 php teste_estresse_super_intenso.php
 ```
 
 Resultado esperado:
 ```
-FASE 1 (Volume): 900 requisições em 145s | Taxa: 100%
-FASE 2 (Picos): 3 picos de 50 usuários | Taxa: 100%
-FASE 3 (Duração): 196 requisições em 45s | Taxa: 100%
+FASE 1 (Volume): 900 requisiÃ§Ãµes em 145s | Taxa: 100%
+FASE 2 (Picos): 3 picos de 50 usuÃ¡rios | Taxa: 100%
+FASE 3 (DuraÃ§Ã£o): 196 requisiÃ§Ãµes em 45s | Taxa: 100%
 
-✓ SUCCESS: Chatbot aguenta carga EXTREMA!
+âœ“ SUCCESS: Chatbot aguenta carga EXTREMA!
 ```
 
 ### Teste de Performance
 
 ```bash
-# Ver latência das queries
+# Ver latÃªncia das queries
 php artisan tinker
 >>> DB::enableQueryLog()
->>> // executar ação
+>>> // executar aÃ§Ã£o
 >>> print_r(DB::getQueryLog())
 ```
 
 ---
 
-## 💡 EXEMPLOS PRÁTICOS
+## ðŸ’¡ EXEMPLOS PRÃTICOS
 
-### Exemplo 1: Fluxo Completo do Usuário
+### Exemplo 1: Fluxo Completo do UsuÃ¡rio
 
 ```
-1️⃣ USUÁRIO INICIA
-   Input: "Olá, quero comprar um apartamento"
-   Bot: "Bem-vindo! Vou ajudar a encontrar o imóvel ideal. ✨"
+1ï¸âƒ£ USUÃRIO INICIA
+   Input: "OlÃ¡, quero comprar um apartamento"
+   Bot: "Bem-vindo! Vou ajudar a encontrar o imÃ³vel ideal. âœ¨"
 
-2️⃣ LGPD
+2ï¸âƒ£ LGPD
    Input: "Sim, concordo com LGPD"
-   Bot: [Vai para próxima etapa]
+   Bot: [Vai para prÃ³xima etapa]
 
-3️⃣ OBJETIVO
+3ï¸âƒ£ OBJETIVO
    Input: "Quero comprar"
-   Bot: "Ótimo! Vamos preencher seu perfil..."
+   Bot: "Ã“timo! Vamos preencher seu perfil..."
 
-4️⃣ QUALIFICAÇÃO (Coleta de Preferências)
-   Input: "2 quartos, Vila Mariana, até 500 mil, pet friendly"
-   Slots Extraídos: {
+4ï¸âƒ£ QUALIFICAÃ‡ÃƒO (Coleta de PreferÃªncias)
+   Input: "2 quartos, Vila Mariana, atÃ© 500 mil, pet friendly"
+   Slots ExtraÃ­dos: {
        quartos: 2,
        bairro: ["Vila Mariana"],
        valor_max: 500000,
        tags: ["pet_friendly"]
    }
-   Bot: "Perfeito! Deixa eu buscar as melhores opções..."
+   Bot: "Perfeito! Deixa eu buscar as melhores opÃ§Ãµes..."
 
-5️⃣ CATÁLOGO (Recomendações)
-   Bot: "✅ ENCONTREI OPÇÕES PERFEITAS:
+5ï¸âƒ£ CATÃLOGO (RecomendaÃ§Ãµes)
+   Bot: "âœ… ENCONTREI OPÃ‡Ã•ES PERFEITAS:
    
-   🏠 Opção 1 - Vila Mariana
-   🛏️ 2 quartos | 🚗 1 vaga
-   💰 R$ 450.000
-   ✨ Pet friendly
+   ðŸ  OpÃ§Ã£o 1 - Vila Mariana
+   ðŸ›ï¸ 2 quartos | ðŸš— 1 vaga
+   ðŸ’° R$ 450.000
+   âœ¨ Pet friendly
    
-   🏠 Opção 2 - Pinheiros
-   🛏️ 2 quartos | 🚗 1 vaga
-   💰 R$ 480.000
-   ✨ Pet friendly
+   ðŸ  OpÃ§Ã£o 2 - Pinheiros
+   ðŸ›ï¸ 2 quartos | ðŸš— 1 vaga
+   ðŸ’° R$ 480.000
+   âœ¨ Pet friendly
    
-   Quer agendar uma visita? 📞"
+   Quer agendar uma visita? ðŸ“ž"
 
-6️⃣ AGENDA
-   Input: "Sim, segunda-feira às 14h"
-   Bot: "✅ Agendamento confirmado!
+6ï¸âƒ£ AGENDA
+   Input: "Sim, segunda-feira Ã s 14h"
+   Bot: "âœ… Agendamento confirmado!
    Data: Segunda, 27/01
    Hora: 14:00
-   Imóvel: Vila Mariana
+   ImÃ³vel: Vila Mariana
    
-   Você receberá um SMS de confirmação. Até lá! 👋"
+   VocÃª receberÃ¡ um SMS de confirmaÃ§Ã£o. AtÃ© lÃ¡! ðŸ‘‹"
 ```
 
 ### Exemplo 2: Enviar Imagem
@@ -587,8 +587,8 @@ php artisan tinker
 $media = new MediaProcessor();
 $analise = $media->processarImagem($urlDaFoto);
 
-// Resposta automática:
-$bot->responder("✅ Analisei sua imagem!\n" .
+// Resposta automÃ¡tica:
+$bot->responder("âœ… Analisei sua imagem!\n" .
                 "Identifiquei: " . $analise);
 ```
 
@@ -599,8 +599,8 @@ use App\Services\InputValidationService;
 
 // Mesmo cliente enviando a mesma coisa 5 vezes
 if (InputValidationService::detectAbusivePattern($clienteId, $msg)) {
-    $bot->responder("Parece que você está enviando mensagens repetidas. "
-                  . "Como posso ajudá-lo?");
+    $bot->responder("Parece que vocÃª estÃ¡ enviando mensagens repetidas. "
+                  . "Como posso ajudÃ¡-lo?");
     return;
 }
 ```
@@ -618,7 +618,7 @@ $response = ResilientHttpService::postWithRetry(
 );
 
 if (!$response) {
-    Log::error("OpenAI não respondendo - circuit breaker aberto");
+    Log::error("OpenAI nÃ£o respondendo - circuit breaker aberto");
     $bot->responder("Desculpe, estou com dificuldade no momento. "
                   . "Tente novamente em alguns minutos.");
 }
@@ -626,9 +626,9 @@ if (!$response) {
 
 ---
 
-## 🚀 MELHORIAS IMPLEMENTADAS
+## ðŸš€ MELHORIAS IMPLEMENTADAS
 
-### 1. Cache Inteligente (80% redução de latência)
+### 1. Cache Inteligente (80% reduÃ§Ã£o de latÃªncia)
 
 ```php
 // Assistants com cache 24h
@@ -640,16 +640,16 @@ $threadId = CacheOptimizationService::getThreadCached($clienteId, $assistantId);
 // Respostas com cache 1h
 $cached = CacheOptimizationService::getCachedResponse($clienteId, $msg);
 
-// Invalidar quando necessário
+// Invalidar quando necessÃ¡rio
 CacheOptimizationService::invalidateClientCache($clienteId);
 ```
 
 **Impacto:**
-- Thread lookup: 2000ms → 5ms (400x mais rápido)
+- Thread lookup: 2000ms â†’ 5ms (400x mais rÃ¡pido)
 - API calls OpenAI: -80%
 - Custo: reduzido significativamente
 
-### 2. Validações Robustas
+### 2. ValidaÃ§Ãµes Robustas
 
 ```php
 use App\Services\InputValidationService;
@@ -670,14 +670,14 @@ if (!InputValidationService::checkRateLimit($clienteId, 30)) {
     throw new RuntimeException("Limite excedido");
 }
 
-// Detectar padrões abusivos
+// Detectar padrÃµes abusivos
 if (InputValidationService::detectAbusivePattern($clienteId, $msg)) {
     Log::warning("Abuso detectado");
 }
 
 // Validar nomes
 if (!InputValidationService::validateClientName($nome)) {
-    throw new InvalidArgumentException("Nome inválido");
+    throw new InvalidArgumentException("Nome invÃ¡lido");
 }
 ```
 
@@ -686,7 +686,7 @@ if (!InputValidationService::validateClientName($nome)) {
 ```php
 use App\Services\ResilientHttpService;
 
-// GET com retry automático
+// GET com retry automÃ¡tico
 $data = ResilientHttpService::getWithRetry(
     $url,
     $headers,
@@ -702,10 +702,10 @@ $response = ResilientHttpService::postWithRetry(
 );
 
 // Features:
-// ✅ 3 tentativas com backoff exponencial (1s → 2s → 4s)
-// ✅ Circuit breaker (abre após 5 erros, pausa 5 min)
-// ✅ Jitter para evitar thundering herd
-// ✅ Logging detalhado de cada tentativa
+// âœ… 3 tentativas com backoff exponencial (1s â†’ 2s â†’ 4s)
+// âœ… Circuit breaker (abre apÃ³s 5 erros, pausa 5 min)
+// âœ… Jitter para evitar thundering herd
+// âœ… Logging detalhado de cada tentativa
 ```
 
 ### 4. Observabilidade Completa
@@ -722,11 +722,11 @@ $mark = ObservabilityService::startTiming('openai_call');
 $ms = ObservabilityService::endTiming($mark); // retorna ms
 
 // Logs estruturados
-ObservabilityService::logSuccess('Ação X', ['detalhes' => 'valores']);
+ObservabilityService::logSuccess('AÃ§Ã£o X', ['detalhes' => 'valores']);
 ObservabilityService::logError('Erro Y', $exception, ['contexto' => 'info']);
 ObservabilityService::logWarning('Aviso Z', ['dados' => 'adicionais']);
 
-// Registrar métricas
+// Registrar mÃ©tricas
 ObservabilityService::recordMetric('api_latency', 245.5, [
     'service' => 'openai'
 ]);
@@ -742,9 +742,9 @@ ObservabilityService::recordEvent('usuario_completou_fluxo', [
 [SUCCESS] Mensagem processada request_id=... etapa=catalogo
 ```
 
-### 5. Índices de Performance DB (100x mais rápido)
+### 5. Ãndices de Performance DB (100x mais rÃ¡pido)
 
-Migration auto-aplicada adiciona índices em:
+Migration auto-aplicada adiciona Ã­ndices em:
 - `threads (cliente_id, empresa_id, agente_id, created_at)`
 - `mensagens (thread_id, cliente_id, created_at)`
 - `instancia_whatsapps (instance_name, empresa_id)`
@@ -755,35 +755,35 @@ Migration auto-aplicada adiciona índices em:
 ```
 Query antes: 500ms
 Query depois: 5ms
-Ganho: 100x mais rápido
+Ganho: 100x mais rÃ¡pido
 ```
 
-### 6. Middleware de Segurança
+### 6. Middleware de SeguranÃ§a
 
 ```php
-// Validações automáticas no webhook:
-✅ Content-Type = application/json
-✅ Payload < 10MB
-✅ Rate limit 100 req/min por IP
-✅ JID format validation
-✅ Message size < 4096 chars
-✅ SQL injection detection
-✅ Security headers automáticos
+// ValidaÃ§Ãµes automÃ¡ticas no webhook:
+âœ… Content-Type = application/json
+âœ… Payload < 10MB
+âœ… Rate limit 100 req/min por IP
+âœ… JID format validation
+âœ… Message size < 4096 chars
+âœ… SQL injection detection
+âœ… Security headers automÃ¡ticos
 ```
 
 ---
 
-## 🔧 TROUBLESHOOTING
+## ðŸ”§ TROUBLESHOOTING
 
-### Problema: Bot não responde
+### Problema: Bot nÃ£o responde
 
 **Checklist:**
-1. Verificar se servidor está rodando:
+1. Verificar se servidor estÃ¡ rodando:
    ```bash
    php artisan serve --host=127.0.0.1 --port=8000
    ```
 
-2. Verificar se queue worker está rodando:
+2. Verificar se queue worker estÃ¡ rodando:
    ```bash
    php artisan queue:work --queue=default
    ```
@@ -793,13 +793,13 @@ Ganho: 100x mais rápido
    tail -f storage/logs/laravel.log
    ```
 
-4. Verificar conexão com banco:
+4. Verificar conexÃ£o com banco:
    ```bash
    php artisan tinker
    >>> DB::connection()->getPdo()
    ```
 
-5. Testar conexão OpenAI:
+5. Testar conexÃ£o OpenAI:
    ```bash
    php test_openai_pure.php
    ```
@@ -820,30 +820,30 @@ if (!InputValidationService::checkRateLimit($clienteId, 60)) {
 # Limpar todo o cache
 php artisan cache:clear
 
-# Ou remover cache específico
+# Ou remover cache especÃ­fico
 php artisan tinker
 >>> Cache::forget('assistant:asst_xxx')
 >>> Cache::forget('thread:client:5511999999999')
 ```
 
-### Problema: Índices não aplicados
+### Problema: Ãndices nÃ£o aplicados
 
 ```bash
-# Rodar migrations novamente (forçar)
+# Rodar migrations novamente (forÃ§ar)
 php artisan migrate:refresh --force
 
-# Ou apenas a migration de índices
+# Ou apenas a migration de Ã­ndices
 php artisan migrate --step=1
 ```
 
-### Problema: Circuit breaker aberto (OpenAI indisponível)
+### Problema: Circuit breaker aberto (OpenAI indisponÃ­vel)
 
 ```bash
 php artisan tinker
 >>> Cache::forget('circuit_breaker:api.openai.com')
 ```
 
-Bot voltará a tentar chamar OpenAI após limpar.
+Bot voltarÃ¡ a tentar chamar OpenAI apÃ³s limpar.
 
 ### Problema: Logs muito grandes
 
@@ -867,60 +867,61 @@ private const MAX_POLLING_ATTEMPTS = 100;  // de 30
 
 ---
 
-## 📊 STATUS ATUAL
+## ðŸ“Š STATUS ATUAL
 
-### ✅ Funcionalidades Completas
+### âœ… Funcionalidades Completas
 
-- [x] Integração WhatsApp via Evolution API
+- [x] IntegraÃ§Ã£o WhatsApp via Evolution API
 - [x] Processamento via OpenAI Assistants v2
 - [x] Fila de jobs (database)
-- [x] Máquina de estados (8 etapas)
-- [x] Extração de slots automática
-- [x] Validação contextual
+- [x] MÃ¡quina de estados (8 etapas)
+- [x] ExtraÃ§Ã£o de slots automÃ¡tica
+- [x] ValidaÃ§Ã£o contextual
 - [x] Matching engine com scoring
 - [x] Media processor (imagens, PDFs, docs)
-- [x] Saudação personalizada
-- [x] Horário de atendimento
+- [x] SaudaÃ§Ã£o personalizada
+- [x] HorÃ¡rio de atendimento
 - [x] Cache inteligente
-- [x] Rate limiting e detecção de abuso
+- [x] Rate limiting e detecÃ§Ã£o de abuso
 - [x] Circuit breaker para APIs externas
 - [x] Observabilidade completa
-- [x] Índices de performance
+- [x] Ãndices de performance
 
-### 📈 Performance Verificada
+### ðŸ“ˆ Performance Verificada
 
 ```
-1.546 requisições enviadas
+1.546 requisiÃ§Ãµes enviadas
 100% taxa de sucesso
 0 falhas detectadas
-Latência P95: <500ms
+LatÃªncia P95: <500ms
 Throughput: 30 req/seg
 ```
 
-### 🎯 Próximos Passos (Opcional)
+### ðŸŽ¯ PrÃ³ximos Passos (Opcional)
 
-1. Conectar matching com DB real de imóveis
-2. Implementar refinamento dinâmico de filtros
+1. Conectar matching com DB real de imÃ³veis
+2. Implementar refinamento dinÃ¢mico de filtros
 3. Machine learning para otimizar scoring
 4. Dashboard de analytics
-5. Integração com CRM
+5. IntegraÃ§Ã£o com CRM
 6. Webhooks para sistemas externos
 
 ---
 
-## 📞 SUPORTE
+## ðŸ“ž SUPORTE
 
-Para dúvidas ou problemas:
+Para dÃºvidas ou problemas:
 
 1. **Consulte os logs**: `storage/logs/laravel.log`
 2. **Execute testes**: `php test_*.php`
-3. **Verifique configuração**: `cat .env | grep -i openai`
+3. **Verifique configuraÃ§Ã£o**: `cat .env | grep -i openai`
 4. **Teste conectividade**: `php test_http.php`
 
 ---
 
-**Bot Production-Ready!** 🚀
+**Bot Production-Ready!** ðŸš€
 
-Versão testada sob carga com **1.546 requisições simultâneas = 100% sucesso**
+VersÃ£o testada sob carga com **1.546 requisiÃ§Ãµes simultÃ¢neas = 100% sucesso**
 
 Documento gerado em: Janeiro 2026
+

@@ -64,7 +64,7 @@ return new class extends Migration
             
             $table->foreign('empresa_id')->references('id')->on('empresas')->onDelete('cascade');
             $table->index(['status_lead', 'dias_inativo']);
-            $table->index(['criado_em']);
+            $table->index(['created_at']);
         });
     }
 

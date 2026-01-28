@@ -31,7 +31,7 @@ return new class extends Migration
             
             $table->foreign('empresa_id')->references('id')->on('empresas')->onDelete('cascade');
             $table->index(['cliente_jid', 'acao']);
-            $table->index(['criado_em']);
+            $table->index(['created_at']);
         });
     }
 
